@@ -56,8 +56,12 @@ export async function POST(request: NextRequest) {
     });
 
     // Log to local file and console for testing
-    const otpLogPath = path.resolve(process.cwd(), "otp-debug.log");
-    fs.writeFileSync(otpLogPath, `[2FA OTP - REGISTRATION] Verification code for ${email} is: ${otp}\n`);
+    try {
+      const otpLogPath = path.resolve(process.cwd(), "otp-debug.log");
+      fs.writeFileSync(otpLogPath, `[2FA OTP - REGISTRATION] Verification code for ${email} is: ${otp}\n`);
+    } catch (_) {
+      console.warn("Could not write OTP to local debug file (read-only environment)");
+    }
     console.log(`[2FA OTP - REGISTRATION] Code for ${email} is: ${otp}`);
 
     // Send real email OTP
