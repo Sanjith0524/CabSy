@@ -20,6 +20,12 @@ export const metadata: Metadata = {
     "Connect with fellow students heading the same way. Split the fare, not the trust.",
   icons: {
     icon: "/logo-circle.png",
+    apple: "/logo-circle.png",
+  },
+  appleWebApp: {
+    capable: true,
+    title: "CabSy",
+    statusBarStyle: "default",
   },
 };
 
