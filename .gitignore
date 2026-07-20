@@ -8,3 +8,9 @@ build/
 
 .next.nosync/
 dev-output.log
+cabsy.db
+*.db
+*.log
+.DS_Store
+.agents/
+.gemini/

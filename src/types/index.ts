@@ -1,4 +1,7 @@
-import { Timestamp } from "firebase/firestore";
+export interface Timestamp {
+  toDate: () => Date;
+  toMillis: () => number;
+}
 
 export interface UserProfile {
   uid: string;
@@ -8,6 +11,7 @@ export interface UserProfile {
   college: string; // derived from email domain
   createdAt: Timestamp;
 }
+
 
 export interface Ride {
   id: string;

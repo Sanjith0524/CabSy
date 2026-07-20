@@ -7,19 +7,21 @@ import {
   useState,
   ReactNode,
 } from "react";
-import {
-  User,
-  onAuthStateChanged,
-  signInWithPopup,
-  signOut as firebaseSignOut,
-} from "firebase/auth";
-import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
-import { auth, db, googleProvider, isAllowedEmail } from "@/lib/firebase";
+
+export interface User {
+  uid: string;
+  email: string;
+  displayName: string;
+  photoURL: string;
+  college: string;
+}
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signInWithGoogle: () => Promise<void>;
+  login: (email: string, password: string) => Promise<{ requiresOTP: boolean; email?: string } | null>;
+  verifyOTP: (email: string, code: string) => Promise<boolean>;
+  signup: (name: string, email: string, password: string) => Promise<{ requiresOTP: boolean; email?: string } | null>;
   signOut: () => Promise<void>;
   authError: string | null;
 }
@@ -27,7 +29,9 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
-  signInWithGoogle: async () => {},
+  login: async () => null,
+  verifyOTP: async () => false,
+  signup: async () => null,
   signOut: async () => {},
   authError: null,
 });
@@ -37,65 +41,116 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        const email = firebaseUser.email ?? "";
-        if (!isAllowedEmail(email)) {
-          await firebaseSignOut(auth);
-          setUser(null);
-          setAuthError("Access restricted to college email addresses only.");
-        } else {
-          setUser(firebaseUser);
-          setAuthError(null);
-          // Upsert user profile in Firestore
-          const ref = doc(db, "users", firebaseUser.uid);
-          const snap = await getDoc(ref);
-          if (!snap.exists()) {
-            const domain = email.split("@")[1];
-            await setDoc(ref, {
-              uid: firebaseUser.uid,
-              displayName: firebaseUser.displayName ?? "Student",
-              email,
-              photoURL: firebaseUser.photoURL ?? "",
-              college: domain,
-              createdAt: serverTimestamp(),
-            });
-          }
-        }
+  const fetchCurrentUser = async () => {
+    try {
+      const res = await fetch("/api/auth/me");
+      const data = await res.json();
+      if (data.user) {
+        setUser(data.user);
       } else {
         setUser(null);
       }
+    } catch {
+      setUser(null);
+    } finally {
       setLoading(false);
-    });
-    return () => unsub();
+    }
+  };
+
+  useEffect(() => {
+    fetchCurrentUser();
   }, []);
 
-  const signInWithGoogle = async () => {
+  const login = async (email: string, password: string) => {
     setAuthError(null);
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const email = result.user.email ?? "";
-      if (!isAllowedEmail(email)) {
-        await firebaseSignOut(auth);
-        setAuthError(
-          "Only college email addresses are allowed. Please use your @vitstudent.ac.in or @vit.ac.in account."
-        );
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        if (data.requiresOTP) {
+          return { requiresOTP: true, email: data.email };
+        }
+        if (data.user) {
+          setUser(data.user);
+          setAuthError(null);
+          return { requiresOTP: false };
+        }
       }
-    } catch (err: unknown) {
-      if (err instanceof Error && err.message.includes("popup-closed")) return;
+      setAuthError(data.error || "Login failed");
+      return null;
+    } catch (err) {
       setAuthError("Sign-in failed. Please try again.");
+      return null;
+    }
+  };
+
+  const verifyOTP = async (email: string, code: string): Promise<boolean> => {
+    setAuthError(null);
+    try {
+      const res = await fetch("/api/auth/otp/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code }),
+      });
+      const data = await res.json();
+      if (res.ok && data.user) {
+        setUser(data.user);
+        setAuthError(null);
+        return true;
+      } else {
+        setAuthError(data.error || "Verification failed");
+        return false;
+      }
+    } catch (err) {
+      setAuthError("Verification failed. Please try again.");
+      return false;
+    }
+  };
+
+  const signup = async (name: string, email: string, password: string) => {
+    setAuthError(null);
+    try {
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        if (data.requiresOTP) {
+          return { requiresOTP: true, email: data.email };
+        }
+        if (data.user) {
+          setUser(data.user);
+          setAuthError(null);
+          return { requiresOTP: false };
+        }
+      }
+      setAuthError(data.error || "Registration failed");
+      return null;
+    } catch (err) {
+      setAuthError("Registration failed. Please try again.");
+      return null;
     }
   };
 
   const signOut = async () => {
-    await firebaseSignOut(auth);
-    setUser(null);
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      setUser(null);
+    }
   };
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, signInWithGoogle, signOut, authError }}
+      value={{ user, loading, login, verifyOTP, signup, signOut, authError }}
     >
       {children}
     </AuthContext.Provider>
@@ -103,3 +158,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 }
 
 export const useAuth = () => useContext(AuthContext);
+

@@ -2,6 +2,10 @@
 
 import Navbar from "@/components/layout/Navbar";
 import { useRequireAuth } from "@/hooks/use-require-auth";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
+import { LayoutDashboard, Car, User, LogOut, ShieldAlert } from "lucide-react";
 
 export default function ProtectedLayout({
   children,
@@ -9,35 +13,38 @@ export default function ProtectedLayout({
   children: React.ReactNode;
 }) {
   const { loading } = useRequireAuth();
+  const { user, signOut } = useAuth();
+  const pathname = usePathname();
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="sticky top-0 z-40 bg-white border-b border-gray-200/80 h-16 animate-pulse" />
-        <main className="max-w-5xl mx-auto px-6 py-8 flex flex-col gap-6">
-          {/* Skeleton Header */}
+      <div className="min-h-screen bg-background text-on-background">
+        <div className="fixed top-0 w-full z-50 bg-surface border-b border-surface-variant h-16 animate-pulse" />
+        <div className="pt-24 px-margin-desktop flex flex-col gap-6">
           <div className="h-10 w-48 skeleton" />
-          {/* Skeleton Actions */}
           <div className="grid grid-cols-2 gap-4">
             <div className="h-20 skeleton" />
             <div className="h-20 skeleton" />
           </div>
-          {/* Skeleton List */}
           <div className="flex flex-col gap-4 mt-4">
             <div className="h-28 skeleton" />
             <div className="h-28 skeleton" />
           </div>
-        </main>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 sm:pb-8">
+    <div className="min-h-screen bg-background text-on-background">
       <Navbar />
-      <main className="max-w-5xl mx-auto px-6 py-8">
-        {children}
+
+      {/* Main Content container */}
+      <main className="pt-24 px-6 md:px-margin-desktop min-h-screen pb-24 sm:pb-12">
+        <div className="max-w-5xl mx-auto">{children}</div>
       </main>
     </div>
   );
 }
+
+

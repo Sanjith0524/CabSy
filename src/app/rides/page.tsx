@@ -6,7 +6,7 @@ import { subscribeToRides } from "@/lib/firestore";
 import ProtectedLayout from "@/components/layout/ProtectedLayout";
 import RideCard from "@/components/rides/RideCard";
 import { Ride } from "@/types";
-import { Search, Compass, Calendar, Filter } from "lucide-react";
+import { Search, Compass, Calendar } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 
@@ -80,20 +80,22 @@ function RidesFeedContent() {
     <ProtectedLayout>
       {/* Page Header */}
       <div className="mb-8">
-        <h1 className="font-display font-extrabold text-3xl text-brand tracking-tight">
+        <h1 className="font-sans font-bold text-4xl uppercase text-on-background">
           Find a Ride
         </h1>
-        <p className="text-sm text-gray-400 mt-1.5">
+
+        <p className="font-sans text-xs text-on-surface-variant mt-2">
           Browse and join active travel groups heading to transit hubs and campuses.
         </p>
+
       </div>
 
       {/* Search Widget */}
-      <div className="bg-white border border-gray-200 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.02)] p-2.5 flex flex-col sm:flex-row items-center gap-3 mb-6">
-        <div className="flex-1 w-full flex items-center gap-2.5 px-3 py-1 bg-gray-50/50 rounded-lg border border-gray-200/50">
-          <Search size={16} className="text-gray-450 flex-shrink-0" />
+      <div className="card p-4 flex flex-col sm:flex-row items-center gap-4 mb-6">
+        <div className="flex-1 w-full flex items-center gap-3 border-b border-surface-variant focus-within:border-primary pb-1">
+          <Search size={16} className="text-primary flex-shrink-0" />
           <input
-            className="w-full text-sm text-gray-800 placeholder-gray-400 bg-transparent focus:outline-none py-1.5"
+            className="w-full text-sm text-on-surface placeholder-outline bg-transparent focus:outline-none py-1.5"
             placeholder="Search pickup, destination, or campus keywords..."
             value={query}
             onChange={(e) => {
@@ -107,7 +109,7 @@ function RidesFeedContent() {
         </div>
 
         {/* Date Filter Pills */}
-        <div className="w-full sm:w-auto flex items-center gap-1.5 border-t sm:border-t-0 sm:border-l border-gray-150 pt-2 sm:pt-0 sm:pl-3 overflow-x-auto scrollbar-hide py-0.5">
+        <div className="w-full sm:w-auto flex items-center gap-2 overflow-x-auto py-1">
           {(["all", "today", "tomorrow"] as const).map((f) => (
             <button
               key={f}
@@ -115,10 +117,10 @@ function RidesFeedContent() {
                 setDateFilter(f);
                 setCustomDate("");
               }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
+              className={`px-4 py-1.5 font-mono text-[10px] uppercase tracking-widest transition-all border ${
                 dateFilter === f
-                  ? "bg-brand border-brand text-white shadow-sm"
-                  : "bg-white border-gray-200 text-gray-500 hover:text-gray-900 hover:bg-gray-55"
+                  ? "bg-primary border-primary text-on-primary"
+                  : "bg-transparent border-surface-variant text-on-surface-variant hover:text-on-surface hover:border-outline"
               }`}
             >
               {f === "all" ? "All Dates" : f.charAt(0).toUpperCase() + f.slice(1)}
@@ -130,7 +132,7 @@ function RidesFeedContent() {
                 setDateFilter("all");
                 setCustomDate("");
               }}
-              className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all border bg-brand border-brand text-white shadow-sm flex items-center gap-1"
+              className="px-4 py-1.5 font-mono text-[10px] uppercase tracking-widest transition-all border bg-primary border-primary text-on-primary flex items-center gap-1.5"
             >
               <Calendar size={11} />
               {customDate}
@@ -142,7 +144,7 @@ function RidesFeedContent() {
       {/* Results Meta Info */}
       {!loading && (
         <div className="flex items-center justify-between mb-4 px-1">
-          <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">
+          <p className="font-mono text-[9px] text-on-surface-variant uppercase tracking-wider">
             {filtered.length} active ride{filtered.length !== 1 ? "s" : ""} matching
           </p>
         </div>
@@ -156,12 +158,13 @@ function RidesFeedContent() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="card p-12 border-dashed border-gray-250 flex flex-col items-center justify-center text-center">
-          <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center mb-4">
-            <Compass size={20} className="text-gray-400" />
+        <div className="card p-12 border-dashed border-surface-variant flex flex-col items-center justify-center text-center">
+          <div className="w-10 h-10 bg-surface-container-low flex items-center justify-center mb-4 border border-surface-variant">
+            <Compass size={18} className="text-primary" />
           </div>
-          <p className="text-sm font-semibold text-gray-700">No matching rides found</p>
-          <p className="text-xs text-gray-400 mt-1 max-w-[280px]">
+          <p className="text-sm font-semibold text-on-surface">No matching rides found</p>
+
+          <p className="text-xs text-on-surface-variant mt-1.5 max-w-[280px]">
             No one has requested a ride for this date or route yet. Try broadening your keywords.
           </p>
           <div className="mt-5 flex gap-3">
@@ -171,12 +174,13 @@ function RidesFeedContent() {
                 setDateFilter("all");
                 setCustomDate("");
               }}
-              className="btn-outline text-xs"
+              className="btn-outline text-[10px]"
             >
-              Clear filters
+              Reset Filters
             </button>
-            <Link href="/rides/create" className="btn-primary text-xs">
-              Post a request
+
+            <Link href="/rides/create" className="btn-primary text-[10px]">
+              Post Request
             </Link>
           </div>
         </div>
@@ -197,11 +201,11 @@ export default function RidesFeedPage() {
       fallback={
         <ProtectedLayout>
           <div className="max-w-5xl mx-auto flex flex-col gap-6">
-            <div className="h-10 w-48 skeleton animate-pulse" />
-            <div className="h-14 skeleton animate-pulse" />
+            <div className="h-10 w-48 skeleton" />
+            <div className="h-14 skeleton" />
             <div className="flex flex-col gap-4 mt-4">
-              <div className="h-32 skeleton animate-pulse" />
-              <div className="h-32 skeleton animate-pulse" />
+              <div className="h-32 skeleton" />
+              <div className="h-32 skeleton" />
             </div>
           </div>
         </ProtectedLayout>
@@ -211,3 +215,4 @@ export default function RidesFeedPage() {
     </Suspense>
   );
 }
+

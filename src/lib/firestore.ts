@@ -1,86 +1,86 @@
-import {
-  collection,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  where,
-  orderBy,
-  onSnapshot,
-  serverTimestamp,
-  Timestamp,
-  increment,
-  runTransaction,
-  limit,
-} from "firebase/firestore";
-import { db } from "./firebase";
 import type { Ride, RideMember, Message } from "@/types";
+
+const mapTimestamp = (val: any) => {
+  if (!val) return undefined;
+  const d = new Date(Number(val));
+  return {
+    toDate: () => d,
+    toMillis: () => d.getTime(),
+  } as any;
+};
 
 // ─── Rides ────────────────────────────────────────────────────────────────────
 
 export async function createRide(
   data: Omit<Ride, "id" | "createdAt" | "expiresAt" | "seatsTaken" | "status">
 ): Promise<string> {
-  // expiresAt = ride datetime + 2 hours
-  const [year, month, day] = data.date.split("-").map(Number);
-  const [hour, minute] = data.time.split(":").map(Number);
-  const rideDate = new Date(year, month - 1, day, hour, minute);
-  rideDate.setHours(rideDate.getHours() + 2);
-
-  const ref = await addDoc(collection(db, "rides"), {
-    ...data,
-    seatsTaken: 1, // creator counts as 1
-    status: "open",
-    createdAt: serverTimestamp(),
-    expiresAt: Timestamp.fromDate(rideDate),
+  const res = await fetch("/api/rides", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
   });
-
-  // Add creator as first member
-  await addDoc(collection(db, "rides", ref.id, "members"), {
-    uid: data.creatorUid,
-    displayName: data.creatorName,
-    email: data.creatorEmail,
-    joinedAt: serverTimestamp(),
-  });
-
-  return ref.id;
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || "Failed to create ride");
+  }
+  const result = await res.json();
+  return result.id;
 }
 
 export async function getRide(rideId: string): Promise<Ride | null> {
-  const snap = await getDoc(doc(db, "rides", rideId));
-  if (!snap.exists()) return null;
-  return { id: snap.id, ...snap.data() } as Ride;
+  try {
+    const res = await fetch(`/api/rides/${rideId}`);
+    if (!res.ok) return null;
+    const { ride } = await res.json();
+    if (!ride) return null;
+    return {
+      ...ride,
+      createdAt: mapTimestamp(ride.createdAt),
+      expiresAt: mapTimestamp(ride.expiresAt),
+    } as any;
+  } catch {
+    return null;
+  }
 }
 
 export function subscribeToRides(
   callback: (rides: Ride[]) => void
 ): () => void {
-  const q = query(
-    collection(db, "rides"),
-    where("status", "in", ["open", "full"]),
-    orderBy("createdAt", "desc"),
-    limit(50)
-  );
-  return onSnapshot(q, (snap) => {
-    const now = Timestamp.now();
-    const rides = snap.docs
-      .map((d) => ({ id: d.id, ...d.data() } as Ride))
-      .filter((r) => {
-        // Hide expired rides
-        if (r.expiresAt && r.expiresAt.toMillis() < now.toMillis()) {
-          return false;
-        }
-        return true;
-      });
-    callback(rides);
-  });
+  let active = true;
+  const fetchRides = async () => {
+    try {
+      const res = await fetch("/api/rides");
+      if (!res.ok) return;
+      const { rides } = await res.json();
+      if (active && rides) {
+        callback(
+          rides.map((r: any) => ({
+            ...r,
+            createdAt: mapTimestamp(r.createdAt),
+            expiresAt: mapTimestamp(r.expiresAt),
+          }))
+        );
+      }
+    } catch (err) {
+      console.error("Fetch rides error:", err);
+    }
+  };
+
+  fetchRides();
+  const interval = setInterval(fetchRides, 3000); // Poll every 3 seconds
+
+  return () => {
+    active = false;
+    clearInterval(interval);
+  };
 }
 
 export async function cancelRide(rideId: string): Promise<void> {
-  await updateDoc(doc(db, "rides", rideId), { status: "cancelled" });
+  const res = await fetch(`/api/rides/${rideId}`, { method: "DELETE" });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || "Failed to cancel ride");
+  }
 }
 
 // ─── Members ──────────────────────────────────────────────────────────────────
@@ -89,50 +89,28 @@ export async function joinRide(
   rideId: string,
   member: Omit<RideMember, "joinedAt">
 ): Promise<void> {
-  await runTransaction(db, async (tx) => {
-    const rideRef = doc(db, "rides", rideId);
-    const rideSnap = await tx.get(rideRef);
-    if (!rideSnap.exists()) throw new Error("Ride not found");
-    const ride = rideSnap.data() as Ride;
-    if (ride.seatsTaken >= ride.seatsTotal) throw new Error("Ride is full");
-    if (ride.status !== "open") throw new Error("Ride is not open");
-
-    const membersSnap = await getDocs(
-      query(
-        collection(db, "rides", rideId, "members"),
-        where("uid", "==", member.uid)
-      )
-    );
-    if (!membersSnap.empty) throw new Error("Already joined");
-
-    const memberRef = doc(collection(db, "rides", rideId, "members"));
-    tx.set(memberRef, { ...member, joinedAt: serverTimestamp() });
-
-    const newTaken = ride.seatsTaken + 1;
-    tx.update(rideRef, {
-      seatsTaken: increment(1),
-      status: newTaken >= ride.seatsTotal ? "full" : "open",
-    });
+  const res = await fetch(`/api/rides/${rideId}/members`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(member),
   });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || "Failed to join ride");
+  }
 }
 
 export async function leaveRide(
   rideId: string,
   uid: string
 ): Promise<void> {
-  const membersSnap = await getDocs(
-    query(
-      collection(db, "rides", rideId, "members"),
-      where("uid", "==", uid)
-    )
-  );
-  for (const memberDoc of membersSnap.docs) {
-    await deleteDoc(memberDoc.ref);
-  }
-  await updateDoc(doc(db, "rides", rideId), {
-    seatsTaken: increment(-1),
-    status: "open",
+  const res = await fetch(`/api/rides/${rideId}/members?uid=${uid}`, {
+    method: "DELETE",
   });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || "Failed to leave ride");
+  }
 }
 
 export async function removeMember(
@@ -146,24 +124,43 @@ export function subscribeToMembers(
   rideId: string,
   callback: (members: RideMember[]) => void
 ): () => void {
-  const q = query(
-    collection(db, "rides", rideId, "members"),
-    orderBy("joinedAt", "asc")
-  );
-  return onSnapshot(q, (snap) => {
-    const members = snap.docs.map((d) => ({ ...d.data() } as RideMember));
-    callback(members);
-  });
+  let active = true;
+  const fetchMembers = async () => {
+    try {
+      const res = await fetch(`/api/rides/${rideId}/members`);
+      if (!res.ok) return;
+      const { members } = await res.json();
+      if (active && members) {
+        callback(
+          members.map((m: any) => ({
+            ...m,
+            joinedAt: mapTimestamp(m.joinedAt),
+          }))
+        );
+      }
+    } catch (err) {
+      console.error("Fetch members error:", err);
+    }
+  };
+
+  fetchMembers();
+  const interval = setInterval(fetchMembers, 3000);
+
+  return () => {
+    active = false;
+    clearInterval(interval);
+  };
 }
 
 export async function isMember(rideId: string, uid: string): Promise<boolean> {
-  const snap = await getDocs(
-    query(
-      collection(db, "rides", rideId, "members"),
-      where("uid", "==", uid)
-    )
-  );
-  return !snap.empty;
+  try {
+    const res = await fetch(`/api/rides/${rideId}/members`);
+    if (!res.ok) return false;
+    const { members } = await res.json();
+    return members.some((m: any) => m.uid === uid);
+  } catch {
+    return false;
+  }
 }
 
 // ─── Messages ─────────────────────────────────────────────────────────────────
@@ -177,49 +174,60 @@ export async function sendMessage(
   displayName: string,
   text: string
 ): Promise<void> {
-  // Count this user's messages in this ride
-  const snap = await getDocs(
-    query(
-      collection(db, "rides", rideId, "messages"),
-      where("uid", "==", uid)
-    )
-  );
-  if (snap.size >= MESSAGE_LIMIT) {
-    throw new Error("Message limit reached for this ride.");
-  }
-  await addDoc(collection(db, "rides", rideId, "messages"), {
-    uid,
-    displayName,
-    text: text.trim(),
-    createdAt: serverTimestamp(),
+  const res = await fetch(`/api/rides/${rideId}/messages`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
   });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || "Failed to send message");
+  }
 }
 
 export function subscribeToMessages(
   rideId: string,
   callback: (messages: Message[]) => void
 ): () => void {
-  const q = query(
-    collection(db, "rides", rideId, "messages"),
-    orderBy("createdAt", "asc")
-  );
-  return onSnapshot(q, (snap) => {
-    const messages = snap.docs.map(
-      (d) => ({ id: d.id, ...d.data() } as Message)
-    );
-    callback(messages);
-  });
+  let active = true;
+  const fetchMessages = async () => {
+    try {
+      const res = await fetch(`/api/rides/${rideId}/messages`);
+      if (!res.ok) return;
+      const { messages } = await res.json();
+      if (active && messages) {
+        callback(
+          messages.map((msg: any) => ({
+            ...msg,
+            createdAt: mapTimestamp(msg.createdAt),
+          }))
+        );
+      }
+    } catch (err) {
+      console.error("Fetch messages error:", err);
+    }
+  };
+
+  fetchMessages();
+  const interval = setInterval(fetchMessages, 2000); // Fast poll for chat messages
+
+  return () => {
+    active = false;
+    clearInterval(interval);
+  };
 }
 
 export async function getUserMessageCount(
   rideId: string,
   uid: string
 ): Promise<number> {
-  const snap = await getDocs(
-    query(
-      collection(db, "rides", rideId, "messages"),
-      where("uid", "==", uid)
-    )
-  );
-  return snap.size;
+  try {
+    const res = await fetch(`/api/rides/${rideId}/messages`);
+    if (!res.ok) return 0;
+    const { messages } = await res.json();
+    return messages.filter((m: any) => m.uid === uid).length;
+  } catch {
+    return 0;
+  }
 }
+

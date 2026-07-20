@@ -14,7 +14,7 @@ import {
 } from "@/lib/firestore";
 import ProtectedLayout from "@/components/layout/ProtectedLayout";
 import { Ride, Message } from "@/types";
-import { Send, ArrowLeft, AlertTriangle, Info, ShieldCheck } from "lucide-react";
+import { Send, ArrowLeft, AlertTriangle, Info, ShieldCheck, Lock } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 
@@ -32,7 +32,7 @@ export default function ChatPage() {
   const [error, setError] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Load ride + check membership (only once)
+  // Load ride + check membership
   useEffect(() => {
     if (!id || !user) return;
     getRide(id).then(setRide);
@@ -50,7 +50,7 @@ export default function ChatPage() {
     return () => unsub();
   }, [id]);
 
-  // Refresh my count only when messages length changes significantly
+  // Refresh my count
   useEffect(() => {
     if (!id || !user) return;
     getUserMessageCount(id, user.uid).then(setMyCount);
@@ -101,27 +101,27 @@ export default function ChatPage() {
     <ProtectedLayout>
       <div className="max-w-2xl mx-auto">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-5 pb-4 border-b border-gray-200">
-          <Link href={`/rides/${id}`} className="p-1.5 border border-gray-250 hover:bg-gray-50 rounded-lg text-gray-500 hover:text-gray-900 transition-colors">
-            <ArrowLeft size={16} />
+        <div className="flex items-center gap-4 mb-5 pb-4 border-b border-surface-variant">
+          <Link href={`/rides/${id}`} className="p-2 border border-surface-variant hover:bg-white/5 rounded-none text-on-surface-variant hover:text-on-surface transition-colors">
+            <ArrowLeft size={14} />
           </Link>
           <div className="flex-1 min-w-0">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-0.5">Ride Coordination Chat</span>
-            <p className="text-sm font-semibold text-gray-800 truncate leading-tight">
+            <span className="font-mono text-[9px] text-[#99907c] uppercase tracking-widest block mb-0.5">Ride Coordination Chat</span>
+            <p className="text-sm font-semibold text-on-surface truncate leading-tight">
               {ride?.pickup} → {ride?.destination}
             </p>
           </div>
-          <span className="text-[10px] bg-gray-150 border border-gray-250 text-gray-600 px-2.5 py-1 rounded-md font-bold uppercase tracking-wider">
+          <span className="font-mono text-[9px] bg-surface-container-low border border-surface-variant text-primary px-3 py-1 uppercase tracking-wider font-bold">
             {myCount} / {MESSAGE_LIMIT} msgs
           </span>
         </div>
 
         {/* Chat Window */}
-        <div className="card flex flex-col bg-white border border-gray-200 shadow-[0_1px_3px_rgba(0,0,0,0.02)] overflow-hidden" style={{ minHeight: "65vh" }}>
+        <div className="card flex flex-col overflow-hidden" style={{ minHeight: "65vh" }}>
           
           {/* Expiration disclaimer */}
-          <div className="flex items-start gap-2.5 px-4 py-3 bg-brand-light/40 border-b border-brand/10 text-xs text-brand/70 font-medium">
-            <Info size={14} className="mt-0.5 flex-shrink-0 text-brand" />
+          <div className="flex items-start gap-2.5 px-4 py-3 bg-[#ffe088]/5 border-b border-[#ffe088]/10 text-xs text-primary font-medium">
+            <Info size={14} className="mt-0.5 flex-shrink-0 text-primary" />
             <span>
               All message histories auto-expire after travel date. Personal information limits allow up to {MESSAGE_LIMIT} messages per rider.
             </span>
@@ -129,29 +129,40 @@ export default function ChatPage() {
 
           {/* Warnings */}
           {nearLimit && (
-            <div className="flex items-start gap-2.5 px-4 py-3 bg-amber-50 border-b border-amber-100 text-xs text-amber-800 font-semibold">
-              <AlertTriangle size={14} className="mt-0.5 flex-shrink-0 text-amber-500" />
+            <div className="flex items-start gap-2.5 px-4 py-3 bg-[#ffe088]/10 border-b border-[#ffe088]/20 text-xs text-[#ffe088] font-semibold">
+              <AlertTriangle size={14} className="mt-0.5 flex-shrink-0 text-[#f2ca50]" />
               <span>
                 Nearing message thresholds. Exchanging contact handles is suggested.
               </span>
             </div>
           )}
           {atLimit && (
-            <div className="flex items-start gap-2.5 px-4 py-3 bg-red-50 border-b border-red-100 text-xs text-red-700 font-semibold">
-              <AlertTriangle size={14} className="mt-0.5 flex-shrink-0 text-red-500" />
+            <div className="flex items-start gap-2.5 px-4 py-3 bg-[#93000a]/15 border-b border-[#93000a]/30 text-xs text-[#ffb4ab] font-semibold">
+              <AlertTriangle size={14} className="mt-0.5 flex-shrink-0 text-red-400" />
               <span>
                 Message thresholds reached. Please coordinate via other offline methods.
               </span>
             </div>
           )}
 
+          {/* Security Banner */}
+          <div className="flex justify-center my-4">
+            <div className="bg-surface-container-low px-4 py-1.5 border border-surface-variant flex items-center gap-2">
+              <Lock size={12} className="text-primary" />
+              <span className="font-mono text-[9px] text-on-surface-variant uppercase tracking-widest">
+                SECURE CHANNEL • SESSION AE-{id.slice(0, 6).toUpperCase()}
+              </span>
+            </div>
+          </div>
+
+
           {/* Message List */}
-          <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4" style={{ maxH: "450px" }}>
+          <div className="flex-grow overflow-y-auto p-5 flex flex-col gap-4 max-h-[450px]">
             {messages.length === 0 && (
-              <div className="flex-1 flex flex-col items-center justify-center text-center text-gray-300 py-10 gap-2">
-                <ShieldCheck size={28} className="text-gray-250" />
-                <p className="text-xs font-semibold text-gray-400">Encrypted room opened</p>
-                <p className="text-[10px] text-gray-400 max-w-[200px]">Send a greeting message to start matching coordinates.</p>
+              <div className="flex-1 flex flex-col items-center justify-center text-center text-on-surface-variant py-10 gap-2">
+                <ShieldCheck size={28} className="text-primary/40" />
+                <p className="font-mono text-[10px] uppercase tracking-wider text-primary">Encrypted room opened</p>
+                <p className="text-xs text-on-surface-variant max-w-[200px]">Send a greeting message to start matching coordinates.</p>
               </div>
             )}
             {messages.map((msg) => {
@@ -167,20 +178,20 @@ export default function ChatPage() {
                   }`}
                 >
                   {!isMe && (
-                    <span className="text-[10px] text-gray-400 font-bold px-1.5 mb-1">
+                    <span className="font-mono text-[9px] text-[#d0c5af] font-bold px-1.5 mb-1 uppercase tracking-wider">
                       {msg.displayName.split(" ")[0]}
                     </span>
                   )}
                   <div
-                    className={`px-4 py-2.5 rounded-[16px] text-sm leading-relaxed ${
+                    className={`px-4 py-2.5 rounded-none text-sm leading-relaxed ${
                       isMe
-                        ? "bg-brand text-white rounded-br-sm shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
-                        : "bg-gray-100 text-gray-800 rounded-bl-sm"
+                        ? "bg-primary text-on-primary font-medium"
+                        : "bg-surface-container-high border border-surface-variant text-on-surface"
                     }`}
                   >
                     {msg.text}
                   </div>
-                  <span className="text-[9px] text-gray-300 px-1 mt-1 font-semibold uppercase">{ts}</span>
+                  <span className="font-mono text-[8px] text-[#99907c] px-1 mt-1 uppercase">{ts}</span>
                 </div>
               );
             })}
@@ -188,27 +199,29 @@ export default function ChatPage() {
           </div>
 
           {/* Input Panel */}
-          <div className="border-t border-gray-150 p-4 flex gap-2.5 items-end bg-gray-50/50">
+          <div className="border-t border-surface-variant p-4 flex gap-2.5 items-end bg-surface-container-low">
             {error && (
-              <div className="absolute bottom-20 left-4 right-4 flex items-center gap-1.5 bg-red-50 border border-red-150 text-red-600 px-3 py-2 rounded-lg text-xs font-semibold">
+              <div className="absolute bottom-20 left-4 right-4 flex items-center gap-1.5 bg-[#93000a]/20 border border-[#93000a] text-[#ffb4ab] px-3 py-2 text-xs font-semibold">
                 <AlertTriangle size={12} />
                 {error}
               </div>
             )}
             <textarea
-              className="flex-1 input resize-none py-2 text-sm leading-relaxed border-gray-200/80 bg-white"
+              className="flex-grow input resize-none py-2 text-sm leading-relaxed border-surface-variant"
               rows={1}
               placeholder={atLimit ? "Capacity reached" : "Say something..."}
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={handleKey}
               disabled={atLimit}
+
+
               maxLength={500}
             />
             <button
               onClick={handleSend}
               disabled={!text.trim() || atLimit || sending}
-              className="w-9 h-9 flex-shrink-0 bg-brand text-white rounded-lg flex items-center justify-center hover:bg-brand/90 transition-all active:scale-[0.97] disabled:opacity-40 disabled:pointer-events-none shadow-[0_1px_2px_rgba(0,0,0,0.05)] animate-in fade-in duration-75"
+              className="w-10 h-10 flex-shrink-0 bg-primary text-[#3c2f00] hover:bg-[#ffe088] flex items-center justify-center transition-all disabled:opacity-40 focus:outline-none"
             >
               <Send size={14} />
             </button>
@@ -218,3 +231,4 @@ export default function ChatPage() {
     </ProtectedLayout>
   );
 }
+
