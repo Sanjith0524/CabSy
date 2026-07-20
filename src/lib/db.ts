@@ -1,6 +1,13 @@
 import { createClient } from "@libsql/client";
 
-const dbUrl = process.env.TURSO_DATABASE_URL || "file:cabsy.db";
+let dbUrl = process.env.TURSO_DATABASE_URL;
+if (!dbUrl) {
+  if (process.env.VERCEL === "1" || process.env.NODE_ENV === "production") {
+    dbUrl = "file:/tmp/cabsy.db";
+  } else {
+    dbUrl = "file:cabsy.db";
+  }
+}
 const dbAuthToken = process.env.TURSO_AUTH_TOKEN;
 
 // Prevent multiple instances of the client in development hot-reloads
