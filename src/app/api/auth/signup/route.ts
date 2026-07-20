@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, initDb } from "@/lib/db";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import { cookies } from "next/headers";
 import { randomUUID } from "crypto";
 import fs from "fs";
 import path from "path";
 import { sendOTPEmail } from "@/lib/mailer";
 
-const JWT_SECRET = process.env.JWT_SECRET || "cabsy_secret_key_12345";
 const ALLOWED_DOMAINS = ["vitstudent.ac.in", "vit.ac.in"];
 
 export async function POST(request: NextRequest) {
   try {
+    await initDb();
     const { name, email, password } = await request.json();
 
     if (!name || !email || !password) {
@@ -28,7 +26,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already exists
-    const existing = db.prepare("SELECT * FROM users WHERE email = ?").get(email) as any;
+    const existingRes = await db.execute({
+      sql: "SELECT * FROM users WHERE email = ?",
+      args: [email],
+    });
+    const existing = existingRes.rows[0];
     if (existing) {
       return NextResponse.json({ error: "Email already registered" }, { status: 400 });
     }
@@ -38,17 +40,20 @@ export async function POST(request: NextRequest) {
     const photoURL = ""; // Fallback avatar
 
     // Insert user (unverified by default)
-    db.prepare(
-      "INSERT INTO users (uid, email, displayName, photoURL, college, passwordHash, isEmailVerified) VALUES (?, ?, ?, ?, ?, ?, 0)"
-    ).run(uid, email, name, photoURL, domain, passwordHash);
+    await db.execute({
+      sql: "INSERT INTO users (uid, email, displayName, photoURL, college, passwordHash, isEmailVerified) VALUES (?, ?, ?, ?, ?, ?, 0)",
+      args: [uid, email, name, photoURL, domain, passwordHash],
+    });
 
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
 
     // Save OTP to database
-    db.prepare("INSERT OR REPLACE INTO user_otps (email, otp, expiresAt) VALUES (?, ?, ?)")
-      .run(email, otp, expiresAt);
+    await db.execute({
+      sql: "INSERT OR REPLACE INTO user_otps (email, otp, expiresAt) VALUES (?, ?, ?)",
+      args: [email, otp, expiresAt],
+    });
 
     // Log to local file and console for testing
     const otpLogPath = path.resolve(process.cwd(), "otp-debug.log");

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, initDb } from "@/lib/db";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 import { randomUUID } from "crypto";
@@ -18,18 +18,18 @@ function getAuthUser() {
 
 export async function GET(request: NextRequest) {
   try {
+    await initDb();
     const user = getAuthUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const now = Date.now();
-    const rides = db.prepare(`
-      SELECT * FROM rides 
-      WHERE status IN ('open', 'full') AND expiresAt > ? 
-      ORDER BY createdAt DESC 
-      LIMIT 50
-    `).all(now);
+    const ridesRes = await db.execute({
+      sql: "SELECT * FROM rides WHERE status IN ('open', 'full') AND expiresAt > ? ORDER BY createdAt DESC LIMIT 50",
+      args: [now.toString()],
+    });
+    const rides = ridesRes.rows;
     
     return NextResponse.json({ rides });
   } catch (err: any) {
@@ -40,6 +40,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    await initDb();
     const user = getAuthUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -59,31 +60,31 @@ export async function POST(request: NextRequest) {
     const createdAt = Date.now();
 
     // Insert ride
-    db.prepare(`
-      INSERT INTO rides (id, pickup, destination, date, time, seatsTotal, seatsTaken, status, creatorUid, creatorName, creatorEmail, notes, createdAt, expiresAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      id,
-      pickup,
-      destination,
-      date,
-      time,
-      seatsTotal,
-      1,
-      "open",
-      user.uid,
-      user.displayName,
-      user.email,
-      notes || null,
-      createdAt,
-      expiresAt
-    );
+    await db.execute({
+      sql: "INSERT INTO rides (id, pickup, destination, date, time, seatsTotal, seatsTaken, status, creatorUid, creatorName, creatorEmail, notes, createdAt, expiresAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      args: [
+        id,
+        pickup,
+        destination,
+        date,
+        time,
+        seatsTotal,
+        1,
+        "open",
+        user.uid,
+        user.displayName,
+        user.email,
+        notes || null,
+        createdAt,
+        expiresAt.toString()
+      ]
+    });
 
     // Insert creator as first member
-    db.prepare(`
-      INSERT INTO ride_members (rideId, uid, displayName, email, joinedAt)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(id, user.uid, user.displayName, user.email, createdAt);
+    await db.execute({
+      sql: "INSERT INTO ride_members (rideId, uid, displayName, email, joinedAt) VALUES (?, ?, ?, ?, ?)",
+      args: [id, user.uid, user.displayName, user.email, createdAt]
+    });
 
     return NextResponse.json({ success: true, id });
   } catch (err: any) {

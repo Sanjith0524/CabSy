@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, initDb } from "@/lib/db";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 
@@ -7,6 +7,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "cabsy_secret_key_12345";
 
 export async function POST(request: NextRequest) {
   try {
+    await initDb();
     const { email, code } = await request.json();
 
     if (!email || !code) {
@@ -14,14 +15,21 @@ export async function POST(request: NextRequest) {
     }
 
     // Find the OTP record
-    const otpRecord = db.prepare("SELECT * FROM user_otps WHERE email = ?").get(email) as any;
+    const otpRecordRes = await db.execute({
+      sql: "SELECT * FROM user_otps WHERE email = ?",
+      args: [email],
+    });
+    const otpRecord = otpRecordRes.rows[0] as any;
     if (!otpRecord) {
       return NextResponse.json({ error: "No pending verification code found. Please sign in again." }, { status: 400 });
     }
 
     // Check expiration
-    if (Date.now() > otpRecord.expiresAt) {
-      db.prepare("DELETE FROM user_otps WHERE email = ?").run(email);
+    if (Date.now() > Number(otpRecord.expiresAt)) {
+      await db.execute({
+        sql: "DELETE FROM user_otps WHERE email = ?",
+        args: [email],
+      });
       return NextResponse.json({ error: "Verification code expired. Please sign in again." }, { status: 400 });
     }
 
@@ -31,13 +39,23 @@ export async function POST(request: NextRequest) {
     }
 
     // OTP is valid - delete it so it cannot be reused
-    db.prepare("DELETE FROM user_otps WHERE email = ?").run(email);
+    await db.execute({
+      sql: "DELETE FROM user_otps WHERE email = ?",
+      args: [email],
+    });
 
     // Update user to verified
-    db.prepare("UPDATE users SET isEmailVerified = 1 WHERE email = ?").run(email);
+    await db.execute({
+      sql: "UPDATE users SET isEmailVerified = 1 WHERE email = ?",
+      args: [email],
+    });
 
     // Get user details
-    const user = db.prepare("SELECT * FROM users WHERE email = ?").get(email) as any;
+    const userRes = await db.execute({
+      sql: "SELECT * FROM users WHERE email = ?",
+      args: [email],
+    });
+    const user = userRes.rows[0] as any;
     if (!user) {
       return NextResponse.json({ error: "User profile not found." }, { status: 400 });
     }

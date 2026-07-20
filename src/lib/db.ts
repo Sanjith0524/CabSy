@@ -1,20 +1,34 @@
-import Database from "better-sqlite3";
-import path from "path";
+import { createClient } from "@libsql/client";
 
-const dbPath = path.resolve(process.cwd(), "cabsy.db");
+const dbUrl = process.env.TURSO_DATABASE_URL || "file:cabsy.db";
+const dbAuthToken = process.env.TURSO_AUTH_TOKEN;
 
-// Prevent multiple instances of Database in development hot-reloads
-const globalForDb = global as unknown as { dbInstance: Database.Database };
+// Prevent multiple instances of the client in development hot-reloads
+const globalForDb = global as unknown as { dbInstance: ReturnType<typeof createClient> };
 
-let db: Database.Database;
+let db: ReturnType<typeof createClient>;
 
 if (process.env.NODE_ENV === "production") {
-  db = new Database(dbPath);
+  db = createClient({
+    url: dbUrl,
+    authToken: dbAuthToken,
+  });
 } else {
   if (!globalForDb.dbInstance) {
-    globalForDb.dbInstance = new Database(dbPath);
-    // Initialize schemas
-    globalForDb.dbInstance.exec(`
+    globalForDb.dbInstance = createClient({
+      url: dbUrl,
+      authToken: dbAuthToken,
+    });
+  }
+  db = globalForDb.dbInstance;
+}
+
+let isInitialized = false;
+
+async function initDb() {
+  if (isInitialized) return;
+  try {
+    await db.execute(`
       CREATE TABLE IF NOT EXISTS users (
         uid TEXT PRIMARY KEY,
         email TEXT UNIQUE NOT NULL,
@@ -24,14 +38,18 @@ if (process.env.NODE_ENV === "production") {
         passwordHash TEXT NOT NULL,
         isEmailVerified INTEGER DEFAULT 0,
         createdAt TEXT DEFAULT (datetime('now', 'localtime'))
-      );
+      )
+    `);
 
+    await db.execute(`
       CREATE TABLE IF NOT EXISTS user_otps (
         email TEXT PRIMARY KEY,
         otp TEXT NOT NULL,
         expiresAt INTEGER NOT NULL
-      );
+      )
+    `);
 
+    await db.execute(`
       CREATE TABLE IF NOT EXISTS rides (
         id TEXT PRIMARY KEY,
         pickup TEXT NOT NULL,
@@ -46,39 +64,41 @@ if (process.env.NODE_ENV === "production") {
         creatorEmail TEXT NOT NULL,
         notes TEXT,
         createdAt TEXT DEFAULT (datetime('now', 'localtime')),
-        expiresAt TEXT,
-        FOREIGN KEY(creatorUid) REFERENCES users(uid)
-      );
+        expiresAt TEXT
+      )
+    `);
 
+    await db.execute(`
       CREATE TABLE IF NOT EXISTS ride_members (
         rideId TEXT NOT NULL,
         uid TEXT NOT NULL,
         displayName TEXT NOT NULL,
         email TEXT NOT NULL,
         joinedAt TEXT DEFAULT (datetime('now', 'localtime')),
-        PRIMARY KEY (rideId, uid),
-        FOREIGN KEY(rideId) REFERENCES rides(id) ON DELETE CASCADE,
-        FOREIGN KEY(uid) REFERENCES users(uid)
-      );
+        PRIMARY KEY (rideId, uid)
+      )
+    `);
 
+    await db.execute(`
       CREATE TABLE IF NOT EXISTS messages (
         id TEXT PRIMARY KEY,
         rideId TEXT NOT NULL,
         uid TEXT NOT NULL,
         displayName TEXT NOT NULL,
         text TEXT NOT NULL,
-        createdAt TEXT DEFAULT (datetime('now', 'localtime')),
-        FOREIGN KEY(rideId) REFERENCES rides(id) ON DELETE CASCADE,
-        FOREIGN KEY(uid) REFERENCES users(uid)
-      );
+        createdAt TEXT DEFAULT (datetime('now', 'localtime'))
+      )
     `);
 
-    // Run migration alter table to add column for existing local databases
+    // Run migration alter table to add column for existing databases
     try {
-      globalForDb.dbInstance.exec("ALTER TABLE users ADD COLUMN isEmailVerified INTEGER DEFAULT 0");
+      await db.execute("ALTER TABLE users ADD COLUMN isEmailVerified INTEGER DEFAULT 0");
     } catch (_) {}
+
+    isInitialized = true;
+  } catch (err) {
+    console.error("Database schema initialization failed:", err);
   }
-  db = globalForDb.dbInstance;
 }
 
-export { db };
+export { db, initDb };

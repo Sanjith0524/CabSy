@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, initDb } from "@/lib/db";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 
@@ -20,13 +20,18 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    await initDb();
     const user = getAuthUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { id } = params;
-    const ride = db.prepare("SELECT * FROM rides WHERE id = ?").get(id) as any;
+    const rideRes = await db.execute({
+      sql: "SELECT * FROM rides WHERE id = ?",
+      args: [id],
+    });
+    const ride = rideRes.rows[0];
     
     if (!ride) {
       return NextResponse.json({ error: "Ride not found" }, { status: 404 });
@@ -44,13 +49,18 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    await initDb();
     const user = getAuthUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { id } = params;
-    const ride = db.prepare("SELECT * FROM rides WHERE id = ?").get(id) as any;
+    const rideRes = await db.execute({
+      sql: "SELECT * FROM rides WHERE id = ?",
+      args: [id],
+    });
+    const ride = rideRes.rows[0] as any;
     
     if (!ride) {
       return NextResponse.json({ error: "Ride not found" }, { status: 404 });
@@ -60,7 +70,10 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden: You did not create this ride" }, { status: 403 });
     }
 
-    db.prepare("UPDATE rides SET status = 'cancelled' WHERE id = ?").run(id);
+    await db.execute({
+      sql: "UPDATE rides SET status = 'cancelled' WHERE id = ?",
+      args: [id],
+    });
     return NextResponse.json({ success: true });
   } catch (err: any) {
     console.error("Cancel ride error:", err);

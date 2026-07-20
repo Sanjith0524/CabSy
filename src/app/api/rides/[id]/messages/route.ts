@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, initDb } from "@/lib/db";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 import { randomUUID } from "crypto";
@@ -22,13 +22,18 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    await initDb();
     const user = getAuthUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { id: rideId } = params;
-    const messages = db.prepare("SELECT * FROM messages WHERE rideId = ? ORDER BY createdAt ASC").all(rideId);
+    const messagesRes = await db.execute({
+      sql: "SELECT * FROM messages WHERE rideId = ? ORDER BY createdAt ASC",
+      args: [rideId],
+    });
+    const messages = messagesRes.rows;
     return NextResponse.json({ messages });
   } catch (err: any) {
     console.error("Fetch messages error:", err);
@@ -41,6 +46,7 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    await initDb();
     const user = getAuthUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -54,8 +60,12 @@ export async function POST(
     }
 
     // Check message limit for this user in this ride
-    const countRow = db.prepare("SELECT COUNT(*) as count FROM messages WHERE rideId = ? AND uid = ?").get(rideId, user.uid) as any;
-    if (countRow && countRow.count >= MESSAGE_LIMIT) {
+    const countRes = await db.execute({
+      sql: "SELECT COUNT(*) as count FROM messages WHERE rideId = ? AND uid = ?",
+      args: [rideId, user.uid],
+    });
+    const countRow = countRes.rows[0] as any;
+    if (countRow && Number(countRow.count) >= MESSAGE_LIMIT) {
       return NextResponse.json({ error: "Message limit reached for this ride." }, { status: 400 });
     }
 
@@ -63,10 +73,10 @@ export async function POST(
     const createdAt = Date.now();
 
     // Insert message
-    db.prepare(`
-      INSERT INTO messages (id, rideId, uid, displayName, text, createdAt)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).run(messageId, rideId, user.uid, user.displayName, text.trim(), createdAt);
+    await db.execute({
+      sql: "INSERT INTO messages (id, rideId, uid, displayName, text, createdAt) VALUES (?, ?, ?, ?, ?, ?)",
+      args: [messageId, rideId, user.uid, user.displayName, text.trim(), createdAt]
+    });
 
     return NextResponse.json({ success: true });
   } catch (err: any) {
