@@ -19,8 +19,20 @@ export const metadata: Metadata = {
   description:
     "Connect with fellow students heading the same way. Split the fare, not the trust.",
   icons: {
-    icon: "/logo1.jpeg",
-    apple: "/logo1.jpeg",
+    icon: [
+      {
+        url: "/logo1.jpeg",
+        sizes: "180x180",
+        type: "image/jpeg",
+      },
+    ],
+    apple: [
+      {
+        url: "/logo1.jpeg",
+        sizes: "180x180",
+        type: "image/jpeg",
+      },
+    ],
   },
   appleWebApp: {
     capable: true,
