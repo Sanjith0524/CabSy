@@ -81,16 +81,16 @@ export default function DashboardPage() {
 
       {/* Main Content Layout */}
       <div className="flex flex-col lg:flex-row items-start gap-8">
-        
+
         {/* Main Content Area (Left 2/3) */}
         <div className="flex-1 w-full flex flex-col gap-8">
-          
+
           {/* Find Your Next Ride Hero Search Box */}
           <div className="card p-6">
             <h2 className="font-mono text-[10px] text-primary tracking-widest uppercase mb-4">
               Find Your Next Ride
             </h2>
-            
+
             <div className="flex flex-col md:flex-row items-center gap-4">
               {/* Pickup location */}
               <div className="flex-1 w-full relative flex items-center border-b border-surface-variant focus-within:border-primary transition-all pb-1">
@@ -142,7 +142,7 @@ export default function DashboardPage() {
             <h3 className="font-mono text-[10px] text-on-surface-variant tracking-widest uppercase mb-4">
               Your Upcoming Ride
             </h3>
-            
+
             {!upcomingRide ? (
               <div className="card p-8 border-dashed border-surface-variant flex flex-col items-center justify-center text-center">
                 <div className="w-10 h-10 bg-surface-container-low flex items-center justify-center mb-4 border border-surface-variant">
@@ -218,7 +218,7 @@ export default function DashboardPage() {
 
         {/* Sidebar Container (Right 1/3) */}
         <div className="w-full lg:w-80 flex flex-col gap-6">
-          
+
           {/* Trust Panel */}
           <div className="card p-5">
             <h4 className="font-mono text-[10px] text-primary tracking-widest uppercase mb-4 flex items-center gap-2">
@@ -228,7 +228,7 @@ export default function DashboardPage() {
             <div className="flex flex-col gap-4 text-xs text-on-surface-variant leading-relaxed font-medium">
               <div className="flex items-start gap-2">
                 <span className="w-1.5 h-1.5 bg-primary mt-1.5 flex-shrink-0" />
-                <p>Every student on CabSy has authenticated with a verified college email address.</p>
+                <p>Every student on CabSy is authenticated with a verified college email address.</p>
               </div>
               <div className="flex items-start gap-2">
                 <span className="w-1.5 h-1.5 bg-primary mt-1.5 flex-shrink-0" />
