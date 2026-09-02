@@ -78,12 +78,10 @@ export default function Navbar() {
         </div>
 
         {/* Right Side */}
-        <div className="flex items-center gap-1">
-
-          <NotificationBell />
+        <div className="flex items-center gap-0.5 sm:gap-1">
 
           {/* MOBILE NAV — icon only, colour-only active state */}
-          <nav className="flex sm:hidden items-center gap-1">
+          <nav className="flex sm:hidden items-center gap-0.5">
             {mobileLinks.map(({ href, label, icon: Icon }) => (
               <Link
                 key={href}
@@ -91,7 +89,7 @@ export default function Navbar() {
                 aria-label={label}
                 aria-current={pathname === href ? "page" : undefined}
                 className={clsx(
-                  "flex items-center justify-center w-11 h-11 rounded-full",
+                  "flex items-center justify-center w-10 h-11 rounded-full",
                   pathname === href ? "text-primary" : "text-on-surface-variant"
                 )}
               >
@@ -99,6 +97,8 @@ export default function Navbar() {
               </Link>
             ))}
           </nav>
+
+          <NotificationBell />
 
           {/* DESKTOP PROFILE DROPDOWN */}
           <div className="hidden sm:block">

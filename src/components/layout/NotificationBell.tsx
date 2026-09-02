@@ -68,22 +68,25 @@ export default function NotificationBell() {
   };
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative flex items-center" ref={ref}>
       <button
         onClick={() => setOpen((o) => !o)}
         aria-label="Notifications"
-        className="relative flex items-center justify-center w-10 h-10 rounded-full text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors"
+        aria-expanded={open}
+        className={`relative flex items-center justify-center w-10 h-11 sm:h-10 rounded-full transition-colors sm:hover:bg-surface-container-low ${
+          open ? "text-primary" : "text-on-surface-variant hover:text-on-surface"
+        }`}
       >
-        <Bell size={19} />
+        <Bell size={20} />
         {unread > 0 && (
-          <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 rounded-full bg-primary text-on-primary text-[10px] font-bold flex items-center justify-center">
+          <span className="absolute top-1.5 right-0.5 min-w-[15px] h-[15px] px-1 rounded-full bg-primary text-on-primary text-[9px] font-bold flex items-center justify-center leading-none">
             {unread > 9 ? "9+" : unread}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-[320px] max-w-[calc(100vw-2rem)] bg-surface border border-surface-variant rounded-2xl shadow-lg z-50 overflow-hidden">
+        <div className="fixed left-3 right-3 top-[68px] sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[340px] bg-surface border border-surface-variant rounded-2xl shadow-lg z-50 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-surface-variant">
             <p className="text-sm font-semibold text-on-surface">Notifications</p>
             {unread > 0 && (
