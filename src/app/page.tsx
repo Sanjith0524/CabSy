@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { ShieldCheck, AlertCircle, Car, User, Mail, Lock } from "lucide-react";
+import { ShieldCheck, AlertCircle, User, Mail, Lock } from "lucide-react";
 
 const ALLOWED_DOMAINS = ["vitstudent.ac.in", "vit.ac.in"];
 
@@ -98,14 +98,9 @@ export default function HomePage() {
 
         {/* Brand Header */}
         <div className="flex flex-col items-center mb-8">
-          <div className="flex items-center gap-2.5 mb-2">
-            <span className="w-9 h-9 rounded-xl bg-primary text-on-primary grid place-items-center shadow-sm">
-              <Car size={18} />
-            </span>
-            <h1 className="font-display font-bold text-2xl tracking-tight text-on-surface">
-              CabSy
-            </h1>
-          </div>
+          <h1 className="font-display font-bold text-2xl tracking-tight text-on-surface mb-1.5">
+            CabSy
+          </h1>
           <p className="text-sm text-on-surface-variant text-center">
             Cabs are better shared
           </p>
