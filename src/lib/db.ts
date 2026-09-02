@@ -1,7 +1,8 @@
-import { createClient } from "@libsql/client";
+import { createClient, type Client } from "@libsql/client";
 
-let dbUrl = process.env.TURSO_DATABASE_URL;
-if (!dbUrl) {
+function resolveDbUrl(): string {
+  const url = process.env.TURSO_DATABASE_URL;
+  if (url) return url;
   // A local file on a serverless platform (Vercel, etc.) is ephemeral and
   // per-instance — data silently disappears. Refuse to run there.
   if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
@@ -9,36 +10,47 @@ if (!dbUrl) {
       "TURSO_DATABASE_URL is not set. A hosted database is required on serverless."
     );
   }
-  // Local dev or a persistent single-server host: a file is fine.
-  dbUrl = "file:cabsy.db";
   if (process.env.NODE_ENV === "production") {
     console.warn(
       "[db] TURSO_DATABASE_URL not set — using local file cabsy.db. " +
         "This only works if the filesystem is persistent (a VM/container, not serverless)."
     );
   }
+  // Local dev or a persistent single-server host: a file is fine.
+  return "file:cabsy.db";
 }
-const dbAuthToken = process.env.TURSO_AUTH_TOKEN;
 
-// Prevent multiple instances of the client in development hot-reloads
-const globalForDb = global as unknown as { dbInstance: ReturnType<typeof createClient> };
+// Prevent multiple instances of the client in development hot-reloads.
+const globalForDb = global as unknown as { dbInstance?: Client };
 
-let db: ReturnType<typeof createClient>;
+let client: Client | undefined;
 
-if (process.env.NODE_ENV === "production") {
-  db = createClient({
-    url: dbUrl,
-    authToken: dbAuthToken,
-  });
-} else {
-  if (!globalForDb.dbInstance) {
-    globalForDb.dbInstance = createClient({
-      url: dbUrl,
-      authToken: dbAuthToken,
-    });
+function getClient(): Client {
+  if (client) return client;
+  if (process.env.NODE_ENV !== "production" && globalForDb.dbInstance) {
+    client = globalForDb.dbInstance;
+    return client;
   }
-  db = globalForDb.dbInstance;
+  client = createClient({
+    url: resolveDbUrl(),
+    authToken: process.env.TURSO_AUTH_TOKEN,
+  });
+  if (process.env.NODE_ENV !== "production") globalForDb.dbInstance = client;
+  return client;
 }
+
+/**
+ * Lazy libSQL client. Nothing connects (or validates env vars) until the first
+ * query — importing this module must stay side-effect-free so `next build`'s
+ * page-data collection doesn't evaluate a live DB config.
+ */
+const db: Client = new Proxy({} as Client, {
+  get(_target, prop) {
+    const c = getClient() as unknown as Record<string | symbol, unknown>;
+    const value = c[prop];
+    return typeof value === "function" ? (value as Function).bind(c) : value;
+  },
+});
 
 let isInitialized = false;
 
