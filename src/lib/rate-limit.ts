@@ -14,7 +14,9 @@ const buckets = new Map<string, Entry>();
 // Keep the map from growing unbounded on a long-lived process.
 function sweep(now: number) {
   if (buckets.size < 5000) return;
-  for (const [k, v] of buckets) if (now > v.reset) buckets.delete(k);
+  buckets.forEach((v, k) => {
+    if (now > v.reset) buckets.delete(k);
+  });
 }
 
 export interface RateResult {
