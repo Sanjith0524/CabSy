@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { createRide } from "@/lib/firestore";
 import ProtectedLayout from "@/components/layout/ProtectedLayout";
-import { MapPin, Flag, Calendar, Clock, Users, FileText, AlertCircle, Sparkles } from "lucide-react";
+import { MapPin, Flag, Calendar, Clock, Users, FileText, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 
 export default function CreateRidePage() {
@@ -64,31 +64,26 @@ export default function CreateRidePage() {
     <ProtectedLayout>
       <div className="max-w-2xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#d4af37]/15 border border-[#d4af37]/35 text-[10px] font-mono font-bold tracking-widest text-primary uppercase mb-3 animate-pulse">
-            <Sparkles size={11} className="text-primary" /> Fast Post
-          </span>
-          <h1 className="font-sans font-bold text-4xl uppercase text-on-background">
-            Post a Ride Request
+        <div className="mb-6">
+          <h1 className="font-display font-bold text-3xl sm:text-4xl text-on-background">
+            Post a ride request
           </h1>
-
-          <p className="font-sans text-xs text-on-surface-variant mt-2">
-            Publish a route to match and share a taxi/cab with verified students.
+          <p className="text-on-surface-variant mt-2">
+            Share a cab with verified students heading the same way.
           </p>
-
         </div>
 
         {/* Card Form */}
-        <div className="card p-6 md:p-8 flex flex-col gap-8">
+        <div className="card p-6 md:p-8 flex flex-col gap-7">
           {/* Pickup */}
           <div>
             <label className="label flex items-center gap-1.5">
-              <MapPin size={13} className="text-primary" />
-              Pickup Location
+              <MapPin size={14} className="text-primary" />
+              Pickup location
             </label>
             <input
               className="input"
-              placeholder="e.g. Campus Main Gate, Hostel Block 3"
+              placeholder="e.g. VIT Main Gate, Hostel Block 3"
               value={form.pickup}
               onChange={(e) => set("pickup", e.target.value)}
             />
@@ -97,27 +92,27 @@ export default function CreateRidePage() {
           {/* Destination */}
           <div>
             <label className="label flex items-center gap-1.5">
-              <Flag size={13} className="text-primary" />
+              <Flag size={14} className="text-primary" />
               Destination
             </label>
             <input
               className="input"
-              placeholder="e.g. Airport Terminal 1, Central Railway Station"
+              placeholder="e.g. Chennai Airport T1, Katpadi Junction"
               value={form.destination}
               onChange={(e) => set("destination", e.target.value)}
             />
           </div>
 
           {/* Date & Time Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
               <label className="label flex items-center gap-1.5">
-                <Calendar size={13} className="text-primary" />
-                Departure Date
+                <Calendar size={14} className="text-primary" />
+                Departure date
               </label>
               <input
                 type="date"
-                className="input invert dark:invert-0"
+                className="input"
                 value={form.date}
                 min={format(new Date(), "yyyy-MM-dd")}
                 onChange={(e) => set("date", e.target.value)}
@@ -125,12 +120,12 @@ export default function CreateRidePage() {
             </div>
             <div>
               <label className="label flex items-center gap-1.5">
-                <Clock size={13} className="text-primary" />
-                Approximate Time
+                <Clock size={14} className="text-primary" />
+                Approximate time
               </label>
               <input
                 type="time"
-                className="input invert dark:invert-0"
+                className="input"
                 value={form.time}
                 onChange={(e) => set("time", e.target.value)}
               />
@@ -140,64 +135,62 @@ export default function CreateRidePage() {
           {/* Seats Select */}
           <div>
             <label className="label flex items-center gap-1.5">
-              <Users size={13} className="text-primary" />
-              Total Seats (including you)
+              <Users size={14} className="text-primary" />
+              Total seats (including you)
             </label>
-            <div className="flex items-center gap-6 mt-2">
-              <div className="flex items-center border border-surface-variant bg-surface-container-low">
+            <div className="flex items-center gap-5 mt-1">
+              <div className="flex items-center rounded-full bg-surface-container-low p-1">
                 <button
                   type="button"
                   onClick={() => set("seatsTotal", Math.max(1, form.seatsTotal - 1))}
-                  className="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-white/5 hover:text-on-surface border-r border-surface-variant font-semibold text-lg transition-colors focus:outline-none"
+                  className="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface hover:text-on-surface font-semibold text-lg transition-colors focus:outline-none"
                 >
                   −
                 </button>
-                <span className="w-12 text-center text-sm font-mono font-bold text-on-surface">
+                <span className="w-10 text-center text-[15px] font-mono font-semibold text-on-surface tabular-nums">
                   {form.seatsTotal}
                 </span>
                 <button
                   type="button"
                   onClick={() => set("seatsTotal", Math.min(4, form.seatsTotal + 1))}
-                  className="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-white/5 hover:text-on-surface border-l border-surface-variant font-semibold text-lg transition-colors focus:outline-none"
+                  className="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface hover:text-on-surface font-semibold text-lg transition-colors focus:outline-none"
                 >
                   +
                 </button>
               </div>
 
-              <p className="text-xs text-on-surface-variant font-medium">Allows matching up to {form.seatsTotal} riders.</p>
+              <p className="text-sm text-on-surface-variant">Room for up to {form.seatsTotal} riders.</p>
             </div>
           </div>
 
           {/* Notes */}
           <div>
             <label className="label flex items-center gap-1.5">
-              <FileText size={13} className="text-[#ffe088]" />
+              <FileText size={14} className="text-primary" />
               Additional notes
-              <span className="text-[10px] text-on-surface-variant font-normal lowercase tracking-normal ml-1">
+              <span className="text-xs text-on-surface-variant font-normal ml-1">
                 (optional)
               </span>
             </label>
             <textarea
-              className="input resize-none py-2"
+              className="input resize-none"
               rows={3}
-              placeholder="e.g. Flight leaves at 6PM, looking to book an Uber XL to share costs. Leaving on time."
+              placeholder="e.g. Flight at 6 PM, planning to book an Uber XL and split the fare. Leaving on time."
               value={form.notes}
               onChange={(e) => set("notes", e.target.value)}
               maxLength={300}
             />
-            <div className="flex items-center justify-between mt-2 px-0.5 font-mono text-[9px] text-[#99907c]">
+            <div className="flex items-center justify-between mt-2 px-0.5 text-xs text-on-surface-variant">
               <span>Max 300 characters</span>
-              <span>
-                {form.notes.length}/300
-              </span>
+              <span className="tabular-nums">{form.notes.length}/300</span>
             </div>
           </div>
 
           {/* Error Notice */}
           {error && (
-            <div className="flex items-start gap-2 bg-[#93000a]/20 border border-[#93000a] p-3">
-              <AlertCircle size={15} className="text-[#ffb4ab] mt-0.5 flex-shrink-0" />
-              <p className="text-xs text-[#ffb4ab] leading-normal font-semibold">{error}</p>
+            <div className="flex items-start gap-2 bg-error-container border border-error/20 p-3.5 rounded-xl">
+              <AlertCircle size={15} className="text-error mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-on-error-container leading-normal font-medium">{error}</p>
             </div>
           )}
 
@@ -205,13 +198,13 @@ export default function CreateRidePage() {
           <button
             onClick={handleSubmit}
             disabled={submitting}
-            className="btn-primary w-full py-4 font-mono text-[10px] font-bold uppercase tracking-widest"
+            className="btn-primary w-full py-4"
           >
-            {submitting ? "Publishing ride..." : "Publish ride request"}
+            {submitting ? "Publishing…" : "Publish ride request"}
           </button>
 
-          <p className="font-sans text-[10px] text-center text-on-surface-variant leading-relaxed">
-            By publishing, your request will be visible to students logged in on your verified campus domain. Coordinate payment and routing directly in the ride chat.
+          <p className="text-xs text-center text-on-surface-variant leading-relaxed">
+            Your request is visible to students on your verified campus domain. Coordinate payment and pickup in the ride chat.
           </p>
         </div>
 

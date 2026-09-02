@@ -28,45 +28,42 @@ export default function ProfilePage() {
     <ProtectedLayout>
       <div className="max-w-2xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <span className="font-mono text-[10px] text-primary tracking-[0.2em] uppercase block mb-1">
-            Access Credentials
-          </span>
-          <h1 className="font-sans font-bold text-4xl uppercase text-on-background">
-            Account Profile
+        <div className="mb-6">
+          <span className="eyebrow text-primary mb-1.5">Your account</span>
+          <h1 className="font-display font-bold text-3xl sm:text-4xl text-on-background">
+            Profile
           </h1>
-
-          <p className="font-sans text-xs text-on-surface-variant mt-2">
-            Manage your verified student passenger credentials and ride logs.
+          <p className="text-on-surface-variant mt-2">
+            Your verified student details and ride history.
           </p>
         </div>
 
         {/* Profile Card */}
-        <div className="card p-6 mb-8 flex flex-col sm:flex-row items-center sm:items-start gap-6">
+        <div className="card p-6 mb-6 flex flex-col sm:flex-row items-center sm:items-start gap-5">
           {user?.photoURL ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={user.photoURL}
               alt={user.displayName ?? ""}
-              className="w-20 h-20 border-2 border-primary object-cover flex-shrink-0"
+              className="w-20 h-20 rounded-2xl border border-surface-variant object-cover flex-shrink-0"
             />
           ) : (
-            <div className="w-20 h-20 bg-surface-container-low flex items-center justify-center text-2xl font-mono font-bold text-primary border border-surface-variant flex-shrink-0">
+            <div className="w-20 h-20 rounded-2xl bg-primary-container flex items-center justify-center text-2xl font-display font-bold text-on-primary-container flex-shrink-0">
               {initials}
             </div>
           )}
-          
+
           <div className="text-center sm:text-left flex-1 min-w-0">
-            <h2 className="font-sans font-bold text-2xl uppercase text-on-surface leading-tight">
+            <h2 className="font-display font-bold text-2xl text-on-surface leading-tight">
               {user?.displayName ?? "Student"}
             </h2>
-            <p className="font-mono text-xs text-on-surface-variant flex items-center justify-center sm:justify-start gap-1.5 mt-2 font-medium truncate">
-              <Mail size={13} className="text-primary" />
+            <p className="text-sm text-on-surface-variant flex items-center justify-center sm:justify-start gap-1.5 mt-1.5 truncate">
+              <Mail size={14} className="text-primary flex-shrink-0" />
               {user?.email}
             </p>
-            
-            <div className="mt-4 flex justify-center sm:justify-start">
-              <span className="inline-flex items-center gap-1 text-[9px] font-mono font-bold text-emerald-400 bg-emerald-950/20 border border-emerald-500/20 px-2.5 py-0.5 uppercase tracking-wider">
+
+            <div className="mt-3.5 flex justify-center sm:justify-start">
+              <span className="pill pill-success">
                 <ShieldCheck size={11} />
                 @{domain} verified student
               </span>
@@ -75,38 +72,37 @@ export default function ProfilePage() {
         </div>
 
         {/* Stats Section */}
-        <div className="grid grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-2 gap-4 mb-6">
           <div className="card p-5">
-            <span className="font-sans font-bold text-4xl text-primary block leading-none">{myRides.length}</span>
-            <span className="font-mono text-[9px] text-[#99907c] font-bold uppercase tracking-wider block mt-3">Total Posted Requests</span>
+            <span className="font-display font-bold text-3xl text-on-surface block leading-none">{myRides.length}</span>
+            <span className="text-[13px] text-on-surface-variant block mt-2.5">Rides posted</span>
           </div>
           <div className="card p-5">
-            <span className="font-sans font-bold text-4xl text-[#ffe088] block leading-none">
+            <span className="font-display font-bold text-3xl text-primary block leading-none">
               {myRides.filter((r) => r.status === "open").length}
             </span>
-            <span className="font-mono text-[9px] text-[#99907c] font-bold uppercase tracking-wider block mt-3">Active Ride Requests</span>
+            <span className="text-[13px] text-on-surface-variant block mt-2.5">Open requests</span>
           </div>
         </div>
 
-
         {/* Privacy guidelines */}
-        <div className="card p-6 mb-8 border-l-4 border-l-primary">
-          <h4 className="font-mono text-[10px] text-primary uppercase tracking-widest flex items-center gap-1.5 mb-4">
-            <ShieldCheck size={14} className="text-primary" /> Privacy Guidelines
+        <div className="card p-6 mb-6">
+          <h4 className="text-[15px] font-semibold text-on-surface flex items-center gap-2 mb-4">
+            <ShieldCheck size={16} className="text-primary" /> Your privacy
           </h4>
 
-          <ul className="text-xs text-on-surface-variant leading-relaxed space-y-3 font-medium">
+          <ul className="text-sm text-on-surface-variant leading-relaxed space-y-3">
             <li className="flex items-start gap-2.5">
-              <CheckCircle2 size={13} className="text-emerald-400 mt-0.5 flex-shrink-0" />
-              <span>Full email credentials remain concealed in listings to verify student status securely.</span>
+              <CheckCircle2 size={14} className="text-primary mt-0.5 flex-shrink-0" />
+              <span>Your full email stays hidden in listings — only your verified status shows.</span>
             </li>
             <li className="flex items-start gap-2.5">
-              <CheckCircle2 size={13} className="text-emerald-400 mt-0.5 flex-shrink-0" />
-              <span>Rider lists are strictly viewable by members inside the same route.</span>
+              <CheckCircle2 size={14} className="text-primary mt-0.5 flex-shrink-0" />
+              <span>Rider lists are visible only to people in the same ride.</span>
             </li>
             <li className="flex items-start gap-2.5">
-              <CheckCircle2 size={13} className="text-emerald-400 mt-0.5 flex-shrink-0" />
-              <span>Coordinated message logs are automatically deleted after departure dates.</span>
+              <CheckCircle2 size={14} className="text-primary mt-0.5 flex-shrink-0" />
+              <span>Chat messages are deleted automatically after the travel date.</span>
             </li>
           </ul>
         </div>
@@ -114,10 +110,10 @@ export default function ProfilePage() {
         {/* Sign out */}
         <button
           onClick={signOut}
-          className="btn-danger-outline w-full py-4 font-mono text-[10px] uppercase tracking-widest"
+          className="btn-danger-outline w-full py-4"
         >
-          <LogOut size={13} />
-          Sign out account
+          <LogOut size={15} />
+          Sign out
         </button>
       </div>
 

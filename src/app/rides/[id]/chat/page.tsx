@@ -14,7 +14,7 @@ import {
 } from "@/lib/firestore";
 import ProtectedLayout from "@/components/layout/ProtectedLayout";
 import { Ride, Message } from "@/types";
-import { Send, ArrowLeft, AlertTriangle, Info, ShieldCheck, Lock } from "lucide-react";
+import { Send, ArrowLeft, AlertTriangle, Info, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 
@@ -101,68 +101,53 @@ export default function ChatPage() {
     <ProtectedLayout>
       <div className="max-w-2xl mx-auto">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-5 pb-4 border-b border-surface-variant">
-          <Link href={`/rides/${id}`} className="p-2 border border-surface-variant hover:bg-white/5 rounded-none text-on-surface-variant hover:text-on-surface transition-colors">
-            <ArrowLeft size={14} />
+        <div className="flex items-center gap-3 mb-5 pb-4 border-b border-surface-variant">
+          <Link href={`/rides/${id}`} className="p-2 border border-surface-variant hover:bg-surface-container-low rounded-full text-on-surface-variant hover:text-on-surface transition-colors">
+            <ArrowLeft size={15} />
           </Link>
           <div className="flex-1 min-w-0">
-            <span className="font-mono text-[9px] text-[#99907c] uppercase tracking-widest block mb-0.5">Ride Coordination Chat</span>
-            <p className="text-sm font-semibold text-on-surface truncate leading-tight">
+            <span className="text-xs text-on-surface-variant block mb-0.5">Ride chat</span>
+            <p className="text-[15px] font-semibold text-on-surface truncate leading-tight">
               {ride?.pickup} → {ride?.destination}
             </p>
           </div>
-          <span className="font-mono text-[9px] bg-surface-container-low border border-surface-variant text-primary px-3 py-1 uppercase tracking-wider font-bold">
-            {myCount} / {MESSAGE_LIMIT} msgs
+          <span className="text-xs font-semibold bg-surface-container-low text-on-surface-variant px-3 py-1.5 rounded-full tabular-nums">
+            {myCount} / {MESSAGE_LIMIT}
           </span>
         </div>
 
         {/* Chat Window */}
         <div className="card flex flex-col overflow-hidden" style={{ minHeight: "65vh" }}>
-          
+
           {/* Expiration disclaimer */}
-          <div className="flex items-start gap-2.5 px-4 py-3 bg-[#ffe088]/5 border-b border-[#ffe088]/10 text-xs text-primary font-medium">
+          <div className="flex items-start gap-2.5 px-4 py-3 bg-primary-container/40 border-b border-surface-variant text-[13px] text-on-surface-variant">
             <Info size={14} className="mt-0.5 flex-shrink-0 text-primary" />
             <span>
-              All message histories auto-expire after travel date. Personal information limits allow up to {MESSAGE_LIMIT} messages per rider.
+              Messages are deleted after the travel date. Up to {MESSAGE_LIMIT} messages per rider — swap contact details before you run out.
             </span>
           </div>
 
           {/* Warnings */}
           {nearLimit && (
-            <div className="flex items-start gap-2.5 px-4 py-3 bg-[#ffe088]/10 border-b border-[#ffe088]/20 text-xs text-[#ffe088] font-semibold">
-              <AlertTriangle size={14} className="mt-0.5 flex-shrink-0 text-[#f2ca50]" />
-              <span>
-                Nearing message thresholds. Exchanging contact handles is suggested.
-              </span>
+            <div className="flex items-start gap-2.5 px-4 py-3 bg-primary-container/60 border-b border-surface-variant text-[13px] text-on-surface font-medium">
+              <AlertTriangle size={14} className="mt-0.5 flex-shrink-0 text-primary" />
+              <span>Almost at the message limit — share a phone number or handle now.</span>
             </div>
           )}
           {atLimit && (
-            <div className="flex items-start gap-2.5 px-4 py-3 bg-[#93000a]/15 border-b border-[#93000a]/30 text-xs text-[#ffb4ab] font-semibold">
-              <AlertTriangle size={14} className="mt-0.5 flex-shrink-0 text-red-400" />
-              <span>
-                Message thresholds reached. Please coordinate via other offline methods.
-              </span>
+            <div className="flex items-start gap-2.5 px-4 py-3 bg-error-container border-b border-error/20 text-[13px] text-on-error-container font-medium">
+              <AlertTriangle size={14} className="mt-0.5 flex-shrink-0 text-error" />
+              <span>Message limit reached. Carry on over phone or another app.</span>
             </div>
           )}
-
-          {/* Security Banner */}
-          <div className="flex justify-center my-4">
-            <div className="bg-surface-container-low px-4 py-1.5 border border-surface-variant flex items-center gap-2">
-              <Lock size={12} className="text-primary" />
-              <span className="font-mono text-[9px] text-on-surface-variant uppercase tracking-widest">
-                SECURE CHANNEL • SESSION AE-{id.slice(0, 6).toUpperCase()}
-              </span>
-            </div>
-          </div>
-
 
           {/* Message List */}
           <div className="flex-grow overflow-y-auto p-5 flex flex-col gap-4 max-h-[450px]">
             {messages.length === 0 && (
               <div className="flex-1 flex flex-col items-center justify-center text-center text-on-surface-variant py-10 gap-2">
                 <ShieldCheck size={28} className="text-primary/40" />
-                <p className="font-mono text-[10px] uppercase tracking-wider text-primary">Encrypted room opened</p>
-                <p className="text-xs text-on-surface-variant max-w-[200px]">Send a greeting message to start matching coordinates.</p>
+                <p className="text-sm font-semibold text-on-surface">Say hi to start planning</p>
+                <p className="text-[13px] text-on-surface-variant max-w-[220px]">Sort out the pickup time and who&apos;s booking the cab.</p>
               </div>
             )}
             {messages.map((msg) => {
@@ -178,20 +163,20 @@ export default function ChatPage() {
                   }`}
                 >
                   {!isMe && (
-                    <span className="font-mono text-[9px] text-[#d0c5af] font-bold px-1.5 mb-1 uppercase tracking-wider">
+                    <span className="text-xs text-on-surface-variant font-semibold px-1.5 mb-1">
                       {msg.displayName.split(" ")[0]}
                     </span>
                   )}
                   <div
-                    className={`px-4 py-2.5 rounded-none text-sm leading-relaxed ${
+                    className={`px-4 py-2.5 text-[15px] leading-relaxed ${
                       isMe
-                        ? "bg-primary text-on-primary font-medium"
-                        : "bg-surface-container-high border border-surface-variant text-on-surface"
+                        ? "bg-primary text-on-primary font-medium rounded-2xl rounded-br-md"
+                        : "bg-surface-container-high text-on-surface rounded-2xl rounded-bl-md"
                     }`}
                   >
                     {msg.text}
                   </div>
-                  <span className="font-mono text-[8px] text-[#99907c] px-1 mt-1 uppercase">{ts}</span>
+                  <span className="text-[11px] text-on-surface-variant px-1 mt-1 tabular-nums">{ts}</span>
                 </div>
               );
             })}
@@ -199,31 +184,29 @@ export default function ChatPage() {
           </div>
 
           {/* Input Panel */}
-          <div className="border-t border-surface-variant p-4 flex gap-2.5 items-end bg-surface-container-low">
+          <div className="relative border-t border-surface-variant p-4 flex gap-2.5 items-end bg-surface-container-low">
             {error && (
-              <div className="absolute bottom-20 left-4 right-4 flex items-center gap-1.5 bg-[#93000a]/20 border border-[#93000a] text-[#ffb4ab] px-3 py-2 text-xs font-semibold">
+              <div className="absolute bottom-20 left-4 right-4 flex items-center gap-1.5 bg-error-container border border-error/20 text-on-error-container px-3 py-2 text-[13px] font-medium rounded-xl">
                 <AlertTriangle size={12} />
                 {error}
               </div>
             )}
             <textarea
-              className="flex-grow input resize-none py-2 text-sm leading-relaxed border-surface-variant"
+              className="flex-grow input resize-none py-2.5 text-[15px] leading-relaxed"
               rows={1}
-              placeholder={atLimit ? "Capacity reached" : "Say something..."}
+              placeholder={atLimit ? "Message limit reached" : "Say something…"}
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={handleKey}
               disabled={atLimit}
-
-
               maxLength={500}
             />
             <button
               onClick={handleSend}
               disabled={!text.trim() || atLimit || sending}
-              className="w-10 h-10 flex-shrink-0 bg-primary text-[#3c2f00] hover:bg-[#ffe088] flex items-center justify-center transition-all disabled:opacity-40 focus:outline-none"
+              className="w-11 h-11 flex-shrink-0 bg-primary text-on-primary hover:bg-primary-fixed rounded-full flex items-center justify-center transition-all disabled:opacity-40 focus:outline-none"
             >
-              <Send size={14} />
+              <Send size={15} />
             </button>
           </div>
         </div>

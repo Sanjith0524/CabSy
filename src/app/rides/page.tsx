@@ -79,24 +79,22 @@ function RidesFeedContent() {
   return (
     <ProtectedLayout>
       {/* Page Header */}
-      <div className="mb-8">
-        <h1 className="font-sans font-bold text-4xl uppercase text-on-background">
-          Find a Ride
+      <div className="mb-6">
+        <h1 className="font-display font-bold text-3xl sm:text-4xl text-on-background">
+          Find a ride
         </h1>
-
-        <p className="font-sans text-xs text-on-surface-variant mt-2">
-          Browse and join active travel groups heading to transit hubs and campuses.
+        <p className="text-on-surface-variant mt-2">
+          Browse and join rides heading to stations, the airport, and around campus.
         </p>
-
       </div>
 
       {/* Search Widget */}
-      <div className="card p-4 flex flex-col sm:flex-row items-center gap-4 mb-6">
-        <div className="flex-1 w-full flex items-center gap-3 border-b border-surface-variant focus-within:border-primary pb-1">
-          <Search size={16} className="text-primary flex-shrink-0" />
+      <div className="card p-3.5 flex flex-col sm:flex-row sm:items-center gap-3 mb-5">
+        <div className="flex-1 w-full flex items-center gap-2.5 bg-surface-container-low rounded-xl px-3.5 py-2.5 border border-transparent focus-within:border-primary focus-within:bg-surface transition-colors">
+          <Search size={16} className="text-outline flex-shrink-0" />
           <input
-            className="w-full text-sm text-on-surface placeholder-outline bg-transparent focus:outline-none py-1.5"
-            placeholder="Search pickup, destination, or campus keywords..."
+            className="w-full text-[15px] text-on-surface placeholder-outline bg-transparent focus:outline-none py-1"
+            placeholder="Search pickup, destination, or a place…"
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
@@ -109,7 +107,7 @@ function RidesFeedContent() {
         </div>
 
         {/* Date Filter Pills */}
-        <div className="w-full sm:w-auto flex items-center gap-2 overflow-x-auto py-1">
+        <div className="w-full sm:w-auto flex items-center gap-2 overflow-x-auto">
           {(["all", "today", "tomorrow"] as const).map((f) => (
             <button
               key={f}
@@ -117,13 +115,13 @@ function RidesFeedContent() {
                 setDateFilter(f);
                 setCustomDate("");
               }}
-              className={`px-4 py-1.5 font-mono text-[10px] uppercase tracking-widest transition-all border ${
+              className={`px-4 py-2 rounded-full text-[13px] font-semibold whitespace-nowrap transition-colors ${
                 dateFilter === f
-                  ? "bg-primary border-primary text-on-primary"
-                  : "bg-transparent border-surface-variant text-on-surface-variant hover:text-on-surface hover:border-outline"
+                  ? "bg-primary text-on-primary"
+                  : "bg-surface-container-low text-on-surface-variant hover:text-on-surface"
               }`}
             >
-              {f === "all" ? "All Dates" : f.charAt(0).toUpperCase() + f.slice(1)}
+              {f === "all" ? "All dates" : f.charAt(0).toUpperCase() + f.slice(1)}
             </button>
           ))}
           {dateFilter === "custom" && (
@@ -132,9 +130,9 @@ function RidesFeedContent() {
                 setDateFilter("all");
                 setCustomDate("");
               }}
-              className="px-4 py-1.5 font-mono text-[10px] uppercase tracking-widest transition-all border bg-primary border-primary text-on-primary flex items-center gap-1.5"
+              className="px-4 py-2 rounded-full text-[13px] font-semibold whitespace-nowrap bg-primary text-on-primary flex items-center gap-1.5"
             >
-              <Calendar size={11} />
+              <Calendar size={12} />
               {customDate}
             </button>
           )}
@@ -143,9 +141,9 @@ function RidesFeedContent() {
 
       {/* Results Meta Info */}
       {!loading && (
-        <div className="flex items-center justify-between mb-4 px-1">
-          <p className="font-mono text-[9px] text-on-surface-variant uppercase tracking-wider">
-            {filtered.length} active ride{filtered.length !== 1 ? "s" : ""} matching
+        <div className="mb-3 px-1">
+          <p className="text-[13px] text-on-surface-variant">
+            {filtered.length} ride{filtered.length !== 1 ? "s" : ""} matching
           </p>
         </div>
       )}
@@ -158,14 +156,13 @@ function RidesFeedContent() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="card p-12 border-dashed border-surface-variant flex flex-col items-center justify-center text-center">
-          <div className="w-10 h-10 bg-surface-container-low flex items-center justify-center mb-4 border border-surface-variant">
-            <Compass size={18} className="text-primary" />
+        <div className="card p-12 border-dashed flex flex-col items-center justify-center text-center">
+          <div className="w-11 h-11 rounded-2xl bg-primary-container flex items-center justify-center mb-4">
+            <Compass size={18} className="text-on-primary-container" />
           </div>
-          <p className="text-sm font-semibold text-on-surface">No matching rides found</p>
-
-          <p className="text-xs text-on-surface-variant mt-1.5 max-w-[280px]">
-            No one has requested a ride for this date or route yet. Try broadening your keywords.
+          <p className="text-[15px] font-semibold text-on-surface">No matching rides found</p>
+          <p className="text-sm text-on-surface-variant mt-1.5 max-w-[300px]">
+            Nobody has posted a ride for this date or route yet. Try broadening your search.
           </p>
           <div className="mt-5 flex gap-3">
             <button
@@ -174,13 +171,13 @@ function RidesFeedContent() {
                 setDateFilter("all");
                 setCustomDate("");
               }}
-              className="btn-outline text-[10px]"
+              className="btn-outline"
             >
-              Reset Filters
+              Reset filters
             </button>
 
-            <Link href="/rides/create" className="btn-primary text-[10px]">
-              Post Request
+            <Link href="/rides/create" className="btn-primary">
+              Post a request
             </Link>
           </div>
         </div>

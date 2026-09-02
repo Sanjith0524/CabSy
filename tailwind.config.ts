@@ -59,10 +59,21 @@ const config: Config = {
         "surface-container-high": "var(--color-surface-container-high)"
       },
       borderRadius: {
-        "DEFAULT": "0px",
-        "lg": "0px",
-        "xl": "0px",
+        "none": "0px",
+        "sm": "8px",
+        "DEFAULT": "12px",
+        "md": "12px",
+        "lg": "16px",
+        "xl": "20px",
+        "2xl": "24px",
+        "3xl": "28px",
         "full": "9999px"
+      },
+      boxShadow: {
+        "sm": "0 1px 2px rgba(20, 20, 46, .05)",
+        "DEFAULT": "0 1px 3px rgba(20, 20, 46, .06), 0 10px 28px -12px rgba(20, 20, 46, .14)",
+        "md": "0 1px 3px rgba(20, 20, 46, .06), 0 10px 28px -12px rgba(20, 20, 46, .14)",
+        "lg": "0 2px 6px rgba(20, 20, 46, .06), 0 24px 48px -20px rgba(30, 26, 120, .22)",
       },
       fontSize: {
         "xs": ["0.8125rem", { lineHeight: "1.25rem" }],       // 13px
@@ -87,8 +98,9 @@ const config: Config = {
         "unit": "8px"
       },
       fontFamily: {
-        sans: ["var(--font-dm-sans)", "sans-serif"],
-        display: ["var(--font-syne)", "sans-serif"],
+        sans: ["var(--font-figtree)", "ui-sans-serif", "system-ui", "sans-serif"],
+        display: ["var(--font-bricolage)", "var(--font-figtree)", "sans-serif"],
+        mono: ["var(--font-dm-mono)", "ui-monospace", "SFMono-Regular", "monospace"],
       },
     },
   },

@@ -1,17 +1,26 @@
 import type { Metadata } from "next";
-import { DM_Sans, Syne } from "next/font/google";
+import { Figtree, Bricolage_Grotesque, DM_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 
-const dmSans = DM_Sans({
+const figtree = Figtree({
   subsets: ["latin"],
-  variable: "--font-dm-sans",
+  variable: "--font-figtree",
+  display: "swap",
 });
 
-const syne = Syne({
+const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
-  variable: "--font-syne",
-  weight: ["700", "800"],
+  variable: "--font-bricolage",
+  weight: ["500", "600", "700"],
+  display: "swap",
+});
+
+const dmMono = DM_Mono({
+  subsets: ["latin"],
+  variable: "--font-dm-mono",
+  weight: ["400", "500"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -67,13 +76,13 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${dmSans.variable} ${syne.variable} font-sans bg-background text-on-background antialiased min-h-screen flex flex-col`}
+        className={`${figtree.variable} ${bricolage.variable} ${dmMono.variable} font-sans bg-background text-on-background antialiased min-h-screen flex flex-col`}
       >
         <AuthProvider>
           <div className="flex-1 flex flex-col">
             <div className="flex-1">{children}</div>
-            <footer className="w-full py-6 border-t border-surface-variant/40 bg-background/50 text-center font-mono text-[9px] text-on-surface-variant/70 tracking-widest uppercase z-40">
-              CabSy © 2026 . v1.0
+            <footer className="w-full py-6 border-t border-surface-variant/50 text-center font-mono text-[11px] text-on-surface-variant/70 tracking-[0.14em] uppercase z-40">
+              CabSy © 2026 · v1.0
             </footer>
           </div>
         </AuthProvider>

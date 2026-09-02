@@ -7,7 +7,7 @@ import { subscribeToRides } from "@/lib/firestore";
 import ProtectedLayout from "@/components/layout/ProtectedLayout";
 import RideCard from "@/components/rides/RideCard";
 import { Ride } from "@/types";
-import { Plus, Search, MapPin, Calendar, Compass, ShieldAlert, ShieldCheck, HelpCircle, TrendingUp } from "lucide-react";
+import { Search, MapPin, Calendar, Compass, ShieldAlert, ShieldCheck, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 
@@ -49,111 +49,109 @@ export default function DashboardPage() {
   return (
     <ProtectedLayout>
       {/* Top Header Section */}
-      <header className="mb-4">
-        <h1 className="font-sans font-bold text-4xl uppercase text-on-background">
-          yo, {user?.displayName}
+      <header className="mb-7">
+        <h1 className="font-display font-bold text-3xl sm:text-4xl text-on-background">
+          Hey, {user?.displayName?.split(" ")[0] ?? "there"}
         </h1>
+        <p className="text-on-surface-variant mt-2">
+          {myRides.filter((r) => r.status === "open").length > 0
+            ? "You've got an open request looking for riders."
+            : "Find a ride heading your way, or post your own."}
+        </p>
       </header>
 
       {/* Stats Grid */}
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-gutter mb-stack-md">
-        <div className="card p-6 relative overflow-hidden group">
-          <h3 className="font-mono text-[10px] text-on-surface-variant tracking-wider uppercase mb-1">TOTAL NETWORK ROUTES</h3>
-          <div className="font-sans font-bold text-3xl text-primary">{rides.length}</div>
-          <div className="flex items-center gap-1 mt-4 font-mono text-[10px] text-secondary">
-            <TrendingUp size={12} />
-            <span>UPDATED JUST NOW</span>
+      <section className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+        <div className="card p-5">
+          <h3 className="text-sm font-medium text-on-surface-variant mb-1.5">Routes in your network</h3>
+          <div className="font-display font-bold text-3xl text-on-surface">{rides.length}</div>
+          <div className="flex items-center gap-1.5 mt-3 text-xs text-on-surface-variant">
+            <TrendingUp size={13} />
+            <span>Updated just now</span>
           </div>
         </div>
-        <div className="card p-6 relative overflow-hidden group border-l-4 border-l-primary">
-          <h3 className="font-mono text-[10px] text-on-surface-variant tracking-wider uppercase mb-1">MY RIDE REQUESTS</h3>
-          <div className="font-sans font-bold text-3xl text-on-surface">
+        <div className="card p-5">
+          <h3 className="text-sm font-medium text-on-surface-variant mb-1.5">Your ride requests</h3>
+          <div className="font-display font-bold text-3xl text-primary">
             {String(myRides.length).padStart(2, "0")}
           </div>
-
-          <div className="flex items-center gap-1 mt-4 font-mono text-[10px] text-primary">
-            <span>{myRides.filter(r => r.status === "open").length} ACTIVE REQUESTS</span>
+          <div className="flex items-center gap-1.5 mt-3 text-xs text-on-surface-variant">
+            <span>{myRides.filter(r => r.status === "open").length} still looking for riders</span>
           </div>
         </div>
       </section>
 
-
-
       {/* Main Content Layout */}
-      <div className="flex flex-col lg:flex-row items-start gap-8">
+      <div className="flex flex-col lg:flex-row items-start gap-6">
 
-        {/* Main Content Area (Left 2/3) */}
-        <div className="flex-1 w-full flex flex-col gap-8">
+        {/* Main Content Area */}
+        <div className="flex-1 w-full flex flex-col gap-6">
 
-          {/* Find Your Next Ride Hero Search Box */}
-          <div className="card p-6">
-            <h2 className="font-mono text-[10px] text-primary tracking-widest uppercase mb-4">
-              Find Your Next Ride
+          {/* Find Your Next Ride */}
+          <div className="card p-5">
+            <h2 className="text-base font-semibold text-on-surface mb-4 flex items-center gap-2">
+              <Search size={16} className="text-primary" />
+              Find your next ride
             </h2>
 
-            <div className="flex flex-col md:flex-row items-center gap-4">
-              {/* Pickup location */}
-              <div className="flex-1 w-full relative flex items-center border-b border-surface-variant focus-within:border-primary transition-all pb-1">
-                <MapPin size={16} className="text-primary mr-3 flex-shrink-0" />
+            <div className="flex flex-col md:flex-row md:items-center gap-3">
+              <div className="flex-1 w-full flex items-center gap-2.5 bg-surface-container-low rounded-xl px-3.5 py-3 border border-transparent focus-within:border-primary focus-within:bg-surface transition-colors">
+                <MapPin size={16} className="text-outline flex-shrink-0" />
                 <input
-                  className="bg-transparent text-sm w-full focus:outline-none placeholder-outline font-medium text-on-surface"
+                  className="bg-transparent text-[15px] w-full focus:outline-none placeholder-outline text-on-surface"
                   placeholder="Pickup"
                   value={from}
                   onChange={(e) => setFrom(e.target.value)}
                 />
               </div>
 
-              {/* Destination */}
-              <div className="flex-1 w-full relative flex items-center border-b border-surface-variant focus-within:border-primary transition-all pb-1">
-                <Compass size={16} className="text-primary mr-3 flex-shrink-0" />
+              <div className="flex-1 w-full flex items-center gap-2.5 bg-surface-container-low rounded-xl px-3.5 py-3 border border-transparent focus-within:border-primary focus-within:bg-surface transition-colors">
+                <Compass size={16} className="text-outline flex-shrink-0" />
                 <input
-                  className="bg-transparent text-sm w-full focus:outline-none placeholder-outline font-medium text-on-surface"
+                  className="bg-transparent text-[15px] w-full focus:outline-none placeholder-outline text-on-surface"
                   placeholder="Destination"
                   value={to}
                   onChange={(e) => setTo(e.target.value)}
                 />
               </div>
 
-              {/* Date */}
-              <div className="w-full md:w-44 relative flex items-center border-b border-surface-variant focus-within:border-primary transition-all pb-1">
-                <Calendar size={16} className="text-secondary mr-3 flex-shrink-0" />
+              <div className="w-full md:w-44 flex items-center gap-2.5 bg-surface-container-low rounded-xl px-3.5 py-3 border border-transparent focus-within:border-primary focus-within:bg-surface transition-colors">
+                <Calendar size={16} className="text-outline flex-shrink-0" />
                 <input
                   type="date"
-                  className="bg-transparent text-sm w-full focus:outline-none placeholder-outline font-medium text-on-surface invert dark:invert-0"
+                  className="bg-transparent text-[15px] w-full focus:outline-none placeholder-outline text-on-surface"
                   min={format(new Date(), "yyyy-MM-dd")}
-
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                 />
               </div>
 
-              {/* Search CTA */}
               <button
                 onClick={handleSearch}
-                className="btn-primary w-full md:w-auto px-6 py-2.5 flex items-center justify-center gap-2"
+                className="btn-primary w-full md:w-auto px-6 py-3 flex-shrink-0"
               >
-                <Search size={14} /> Search
+                <Search size={15} /> Search
               </button>
             </div>
           </div>
 
           {/* Section: Your Upcoming Ride */}
           <section>
-            <h3 className="font-mono text-[10px] text-on-surface-variant tracking-widest uppercase mb-4">
-              Your Upcoming Ride
+            <h3 className="text-base font-semibold text-on-surface mb-3">
+              Your upcoming ride
             </h3>
 
             {!upcomingRide ? (
-              <div className="card p-8 border-dashed border-surface-variant flex flex-col items-center justify-center text-center">
-                <div className="w-10 h-10 bg-surface-container-low flex items-center justify-center mb-4 border border-surface-variant">
-                  <Calendar size={18} className="text-primary" />
+              <div className="card p-8 border-dashed flex flex-col items-center justify-center text-center">
+                <div className="w-11 h-11 rounded-2xl bg-primary-container flex items-center justify-center mb-4">
+                  <Calendar size={18} className="text-on-primary-container" />
                 </div>
-                <p className="text-sm font-semibold text-on-surface">No active ride requests scheduled</p>
-                <p className="text-xs text-on-surface-variant mt-1.5 max-w-[280px]">
-                  Coordinate travel routes by posting a request or searching matching lists.
+                <p className="text-[15px] font-semibold text-on-surface">No ride requests yet</p>
+                <p className="text-sm text-on-surface-variant mt-1.5 max-w-[300px]">
+                  Post a request or search for a ride heading your way.
                 </p>
-                <Link href="/rides/create" className="btn-outline text-[10px] mt-5">
-                  Post a Request
+                <Link href="/rides/create" className="btn-outline mt-5">
+                  Post a request
                 </Link>
               </div>
             ) : (
@@ -161,19 +159,18 @@ export default function DashboardPage() {
             )}
           </section>
 
-          {/* Section: Recommended Rides */}
+          {/* Section: Rides you can join */}
           <section>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-mono text-[10px] text-on-surface-variant tracking-widest uppercase">
-                Explore Matching Rides
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-base font-semibold text-on-surface">
+                Rides you can join
               </h3>
               {otherRides.length > 0 && (
-                <Link href="/rides" className="font-mono text-[10px] text-primary hover:text-[#ffe088] uppercase tracking-widest">
-                  View All Rides →
+                <Link href="/rides" className="text-[13px] font-semibold text-primary hover:underline">
+                  View all rides →
                 </Link>
               )}
             </div>
-
 
             {loading ? (
               <div className="flex flex-col gap-4">
@@ -182,16 +179,15 @@ export default function DashboardPage() {
                 ))}
               </div>
             ) : otherRides.length === 0 ? (
-              <div className="card p-10 flex flex-col items-center justify-center text-center border-dashed border-surface-variant">
-                <div className="w-10 h-10 bg-surface-container-low flex items-center justify-center mb-4 border border-surface-variant">
-                  <Compass size={18} className="text-secondary" />
+              <div className="card p-10 flex flex-col items-center justify-center text-center border-dashed">
+                <div className="w-11 h-11 rounded-2xl bg-surface-container-low flex items-center justify-center mb-4">
+                  <Compass size={18} className="text-on-surface-variant" />
                 </div>
-                <p className="text-sm font-semibold text-on-surface">No matching routes in network</p>
-                <p className="text-xs text-on-surface-variant mt-1.5 max-w-[280px]">
-                  Be the first to post a ride request for your domain.
+                <p className="text-[15px] font-semibold text-on-surface">No matching rides right now</p>
+                <p className="text-sm text-on-surface-variant mt-1.5 max-w-[300px]">
+                  Be the first to post a ride for your campus.
                 </p>
               </div>
-
             ) : (
               <div className="flex flex-col gap-4">
                 {otherRides.map((ride) => (
@@ -204,8 +200,8 @@ export default function DashboardPage() {
           {/* Section: My Active Ride requests */}
           {activeRides.length > 0 && (
             <section>
-              <h3 className="font-mono text-[10px] text-on-surface-variant tracking-widest uppercase mb-4">
-                My Other Active Requests
+              <h3 className="text-base font-semibold text-on-surface mb-3">
+                Your other active requests
               </h3>
               <div className="flex flex-col gap-4">
                 {activeRides.map((ride) => (
@@ -216,44 +212,43 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Sidebar Container (Right 1/3) */}
-        <div className="w-full lg:w-80 flex flex-col gap-6">
+        {/* Sidebar */}
+        <div className="w-full lg:w-80 flex flex-col gap-4">
 
           {/* Trust Panel */}
           <div className="card p-5">
-            <h4 className="font-mono text-[10px] text-primary tracking-widest uppercase mb-4 flex items-center gap-2">
-              <ShieldCheck className="text-emerald-500" size={16} />
-              Trust & Safety Check
+            <h4 className="text-[15px] font-semibold text-on-surface mb-4 flex items-center gap-2">
+              <ShieldCheck className="text-primary" size={16} />
+              Trust &amp; safety
             </h4>
-            <div className="flex flex-col gap-4 text-xs text-on-surface-variant leading-relaxed font-medium">
-              <div className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 bg-primary mt-1.5 flex-shrink-0" />
-                <p>Every student on CabSy is authenticated with a verified college email address.</p>
+            <div className="flex flex-col gap-3.5 text-sm text-on-surface-variant leading-relaxed">
+              <div className="flex items-start gap-2.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
+                <p>Every rider signs in with a verified college email.</p>
               </div>
-              <div className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 bg-primary mt-1.5 flex-shrink-0" />
-                <p>Always inspect physical student credentials before boarding any shared vehicle.</p>
+              <div className="flex items-start gap-2.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
+                <p>Check a student ID before you get in the cab.</p>
               </div>
-              <div className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 bg-primary mt-1.5 flex-shrink-0" />
-                <p>Coordinate travel costs and split booking receipts directly in the coordinate chat room.</p>
+              <div className="flex items-start gap-2.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
+                <p>Split the fare and share the receipt in the ride chat.</p>
               </div>
             </div>
           </div>
 
-          {/* College Safety Notice */}
-          <div className="card p-5">
-            <div className="flex items-start gap-3 mb-3">
-              <ShieldAlert className="text-primary flex-shrink-0 mt-0.5" size={17} />
-              <h4 className="font-mono text-[10px] text-on-surface uppercase tracking-wider">Campus Notice</h4>
+          {/* Campus Notice */}
+          <div className="card p-5 bg-primary-container/40 border-primary/20">
+            <div className="flex items-center gap-2 mb-2.5">
+              <ShieldAlert className="text-primary flex-shrink-0" size={16} />
+              <h4 className="text-[15px] font-semibold text-on-surface">Campus notice</h4>
             </div>
-            <p className="text-xs text-on-surface-variant leading-relaxed">
-              Travel routes scheduled after 9:00 PM must coordinate pickup gates carefully due to university hostel curfew regulations. Keep group chats updated.
+            <p className="text-sm text-on-surface-variant leading-relaxed">
+              Rides leaving after 9:00 PM need to sort out the hostel gate and curfew pass ahead of time. Keep the group chat updated so nobody gets left at the gate.
             </p>
           </div>
 
         </div>
-
 
       </div>
 
