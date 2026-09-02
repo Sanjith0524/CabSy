@@ -156,7 +156,7 @@ function RidesFeedContent() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="card p-12 border-dashed flex flex-col items-center justify-center text-center">
+        <div className="card p-8 sm:p-12 border-dashed flex flex-col items-center justify-center text-center">
           <div className="w-11 h-11 rounded-2xl bg-primary-container flex items-center justify-center mb-4">
             <Compass size={18} className="text-on-primary-container" />
           </div>
@@ -164,19 +164,22 @@ function RidesFeedContent() {
           <p className="text-sm text-on-surface-variant mt-1.5 max-w-[300px]">
             Nobody has posted a ride for this date or route yet. Try broadening your search.
           </p>
-          <div className="mt-5 flex gap-3">
+          <div className="mt-5 flex flex-col sm:flex-row gap-2.5 w-full max-w-[260px] sm:max-w-none sm:w-auto">
             <button
               onClick={() => {
                 setQuery("");
                 setDateFilter("all");
                 setCustomDate("");
               }}
-              className="btn-outline"
+              className="btn-outline w-full sm:w-auto justify-center"
             >
               Reset filters
             </button>
 
-            <Link href="/rides/create" className="btn-primary">
+            <Link
+              href="/rides/create"
+              className="btn-primary w-full sm:w-auto justify-center"
+            >
               Post a request
             </Link>
           </div>
