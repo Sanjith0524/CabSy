@@ -5,16 +5,44 @@ import { randomUUID } from "crypto";
 import fs from "fs";
 import path from "path";
 import { sendOTPEmail } from "@/lib/mailer";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
 
 const ALLOWED_DOMAINS = ["vitstudent.ac.in", "vit.ac.in"];
+const IS_PROD = process.env.NODE_ENV === "production";
 
 export async function POST(request: NextRequest) {
   try {
     await initDb();
-    const { name, email, password } = await request.json();
+
+    const ip = clientIp(request);
+    const limited = rateLimit(`signup:${ip}`, 5, 60 * 60 * 1000); // 5 / hour / IP
+    if (!limited.ok) {
+      return NextResponse.json(
+        { error: "Too many sign-up attempts. Try again later." },
+        { status: 429, headers: { "Retry-After": String(limited.retryAfter) } }
+      );
+    }
+
+    const body = await request.json();
+    const name = typeof body.name === "string" ? body.name.trim() : "";
+    const email =
+      typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+    const password = typeof body.password === "string" ? body.password : "";
 
     if (!name || !email || !password) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+    if (name.length > 80) {
+      return NextResponse.json({ error: "Name is too long" }, { status: 400 });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json({ error: "Enter a valid email address" }, { status: 400 });
+    }
+    if (password.length < 8 || password.length > 128) {
+      return NextResponse.json(
+        { error: "Password must be at least 8 characters" },
+        { status: 400 }
+      );
     }
 
     const domain = email.split("@")[1];
@@ -27,56 +55,49 @@ export async function POST(request: NextRequest) {
 
     // Check if user already exists
     const existingRes = await db.execute({
-      sql: "SELECT * FROM users WHERE email = ?",
+      sql: "SELECT uid FROM users WHERE email = ?",
       args: [email],
     });
-    const existing = existingRes.rows[0];
-    if (existing) {
+    if (existingRes.rows[0]) {
       return NextResponse.json({ error: "Email already registered" }, { status: 400 });
     }
 
     const uid = randomUUID();
     const passwordHash = await bcrypt.hash(password, 10);
-    const photoURL = ""; // Fallback avatar
 
-    // Insert user (unverified by default)
     await db.execute({
       sql: "INSERT INTO users (uid, email, displayName, photoURL, college, passwordHash, isEmailVerified) VALUES (?, ?, ?, ?, ?, ?, 0)",
-      args: [uid, email, name, photoURL, domain, passwordHash],
+      args: [uid, email, name, "", domain, passwordHash],
     });
 
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
 
-    // Save OTP to database
     await db.execute({
-      sql: "INSERT OR REPLACE INTO user_otps (email, otp, expiresAt) VALUES (?, ?, ?)",
+      sql: "INSERT OR REPLACE INTO user_otps (email, otp, expiresAt, attempts) VALUES (?, ?, ?, 0)",
       args: [email, otp, expiresAt],
     });
 
-    // Log to local file and console for testing
-    try {
-      const otpLogPath = path.resolve(process.cwd(), "otp-debug.log");
-      fs.writeFileSync(otpLogPath, `[2FA OTP - REGISTRATION] Verification code for ${email} is: ${otp}\n`);
-    } catch (_) {
-      console.warn("Could not write OTP to local debug file (read-only environment)");
+    // Dev-only: surface the code locally so you don't need a real inbox.
+    if (!IS_PROD) {
+      try {
+        fs.writeFileSync(
+          path.resolve(process.cwd(), "otp-debug.log"),
+          `[2FA OTP - REGISTRATION] ${email}: ${otp}\n`
+        );
+      } catch (_) {}
+      console.log(`[2FA OTP - REGISTRATION] ${email}: ${otp}`);
     }
-    console.log(`[2FA OTP - REGISTRATION] Code for ${email} is: ${otp}`);
 
-    // Send real email OTP
     try {
       await sendOTPEmail(email, otp, "signup");
-    } catch (mailErr: any) {
+    } catch (mailErr) {
       console.error("Failed to send OTP email:", mailErr);
-      // Fallback: we still allow them to verify via the log file locally if SMTP fails
     }
 
-    return NextResponse.json({
-      requiresOTP: true,
-      email,
-    });
-  } catch (err: any) {
+    return NextResponse.json({ requiresOTP: true, email });
+  } catch (err) {
     console.error("Signup error:", err);
     return NextResponse.json({ error: "Registration failed. Please try again." }, { status: 500 });
   }

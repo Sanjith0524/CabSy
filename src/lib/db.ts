@@ -2,10 +2,20 @@ import { createClient } from "@libsql/client";
 
 let dbUrl = process.env.TURSO_DATABASE_URL;
 if (!dbUrl) {
-  if (process.env.VERCEL === "1" || process.env.NODE_ENV === "production") {
-    dbUrl = "file:/tmp/cabsy.db";
-  } else {
-    dbUrl = "file:cabsy.db";
+  // A local file on a serverless platform (Vercel, etc.) is ephemeral and
+  // per-instance — data silently disappears. Refuse to run there.
+  if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    throw new Error(
+      "TURSO_DATABASE_URL is not set. A hosted database is required on serverless."
+    );
+  }
+  // Local dev or a persistent single-server host: a file is fine.
+  dbUrl = "file:cabsy.db";
+  if (process.env.NODE_ENV === "production") {
+    console.warn(
+      "[db] TURSO_DATABASE_URL not set — using local file cabsy.db. " +
+        "This only works if the filesystem is persistent (a VM/container, not serverless)."
+    );
   }
 }
 const dbAuthToken = process.env.TURSO_AUTH_TOKEN;
@@ -52,7 +62,8 @@ async function initDb() {
       CREATE TABLE IF NOT EXISTS user_otps (
         email TEXT PRIMARY KEY,
         otp TEXT NOT NULL,
-        expiresAt INTEGER NOT NULL
+        expiresAt INTEGER NOT NULL,
+        attempts INTEGER DEFAULT 0
       )
     `);
 
@@ -97,9 +108,12 @@ async function initDb() {
       )
     `);
 
-    // Run migration alter table to add column for existing databases
+    // Run migration alter tables to add columns for existing databases
     try {
       await db.execute("ALTER TABLE users ADD COLUMN isEmailVerified INTEGER DEFAULT 0");
+    } catch (_) {}
+    try {
+      await db.execute("ALTER TABLE user_otps ADD COLUMN attempts INTEGER DEFAULT 0");
     } catch (_) {}
 
     isInitialized = true;

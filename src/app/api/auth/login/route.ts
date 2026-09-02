@@ -1,52 +1,73 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, initDb } from "@/lib/db";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
+import { signSession, SESSION_COOKIE, sessionCookieOptions } from "@/lib/auth";
+import { sendOTPEmail } from "@/lib/mailer";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
 
-const JWT_SECRET = process.env.JWT_SECRET || "cabsy_secret_key_12345";
+const IS_PROD = process.env.NODE_ENV === "production";
 
 export async function POST(request: NextRequest) {
   try {
     await initDb();
-    const { email, password } = await request.json();
+
+    const ip = clientIp(request);
+    const limited = rateLimit(`login:${ip}`, 10, 15 * 60 * 1000); // 10 / 15 min / IP
+    if (!limited.ok) {
+      return NextResponse.json(
+        { error: "Too many attempts. Try again in a few minutes." },
+        { status: 429, headers: { "Retry-After": String(limited.retryAfter) } }
+      );
+    }
+
+    const body = await request.json();
+    const email =
+      typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+    const password = typeof body.password === "string" ? body.password : "";
 
     if (!email || !password) {
       return NextResponse.json({ error: "Missing email or password" }, { status: 400 });
     }
 
-    // Find user in database
     const userRes = await db.execute({
       sql: "SELECT * FROM users WHERE email = ?",
       args: [email],
     });
     const user = userRes.rows[0] as any;
-    if (!user) {
+
+    // Same response whether the email exists or not, to avoid enumeration.
+    const valid = user
+      ? await bcrypt.compare(password, user.passwordHash)
+      : false;
+    if (!user || !valid) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 400 });
     }
 
-    // Verify password
-    const valid = await bcrypt.compare(password, user.passwordHash);
-    if (!valid) {
-      return NextResponse.json({ error: "Invalid credentials" }, { status: 400 });
+    // Enforce email verification. If they never verified, re-issue an OTP and
+    // send them to the verification step instead of logging them in.
+    if (!user.isEmailVerified) {
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = Date.now() + 5 * 60 * 1000;
+      await db.execute({
+        sql: "INSERT OR REPLACE INTO user_otps (email, otp, expiresAt, attempts) VALUES (?, ?, ?, 0)",
+        args: [email, otp, expiresAt],
+      });
+      if (!IS_PROD) console.log(`[2FA OTP - LOGIN] ${email}: ${otp}`);
+      try {
+        await sendOTPEmail(email, otp, "login");
+      } catch (mailErr) {
+        console.error("Failed to send OTP email:", mailErr);
+      }
+      return NextResponse.json({ requiresOTP: true, email });
     }
 
-    // Direct login - bypass email verification check during login as requested
-    // Create session token
-    const token = jwt.sign(
-      { uid: user.uid, email: user.email, displayName: user.displayName },
-      JWT_SECRET,
-      { expiresIn: "7d" }
-    );
-
-    // Set cookie
-    cookies().set("cabsy_session", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7,
-      path: "/",
+    const token = signSession({
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName,
     });
+    cookies().set(SESSION_COOKIE, token, sessionCookieOptions);
 
     return NextResponse.json({
       user: {
@@ -57,8 +78,11 @@ export async function POST(request: NextRequest) {
         college: user.college,
       },
     });
-  } catch (err: any) {
+  } catch (err) {
     console.error("Login error:", err);
-    return NextResponse.json({ error: "Authentication failed. Please try again." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Authentication failed. Please try again." },
+      { status: 500 }
+    );
   }
 }

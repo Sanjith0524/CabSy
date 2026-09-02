@@ -1,21 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, initDb } from "@/lib/db";
-import jwt from "jsonwebtoken";
-import { cookies } from "next/headers";
 import { randomUUID } from "crypto";
+import { getAuthUser, isRideMember } from "@/lib/auth";
 
-const JWT_SECRET = process.env.JWT_SECRET || "cabsy_secret_key_12345";
 const MESSAGE_LIMIT = 25;
-
-function getAuthUser() {
-  const token = cookies().get("cabsy_session")?.value;
-  if (!token) return null;
-  try {
-    return jwt.verify(token, JWT_SECRET) as any;
-  } catch {
-    return null;
-  }
-}
+const MAX_LENGTH = 500;
 
 export async function GET(
   request: NextRequest,
@@ -27,15 +16,19 @@ export async function GET(
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    if (!(await isRideMember(params.id, user.uid))) {
+      return NextResponse.json(
+        { error: "Forbidden: join this ride to see its chat" },
+        { status: 403 }
+      );
+    }
 
-    const { id: rideId } = params;
     const messagesRes = await db.execute({
-      sql: "SELECT * FROM messages WHERE rideId = ? ORDER BY createdAt ASC",
-      args: [rideId],
+      sql: "SELECT id, rideId, uid, displayName, text, createdAt FROM messages WHERE rideId = ? ORDER BY createdAt ASC",
+      args: [params.id],
     });
-    const messages = messagesRes.rows;
-    return NextResponse.json({ messages });
-  } catch (err: any) {
+    return NextResponse.json({ messages: messagesRes.rows });
+  } catch (err) {
     console.error("Fetch messages error:", err);
     return NextResponse.json({ error: "Failed to fetch messages" }, { status: 500 });
   }
@@ -51,35 +44,43 @@ export async function POST(
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    if (!(await isRideMember(params.id, user.uid))) {
+      return NextResponse.json(
+        { error: "Forbidden: join this ride to post in its chat" },
+        { status: 403 }
+      );
+    }
 
-    const { id: rideId } = params;
-    const { text } = await request.json();
-
-    if (!text || !text.trim()) {
+    const body = await request.json();
+    const text = typeof body.text === "string" ? body.text.trim() : "";
+    if (!text) {
       return NextResponse.json({ error: "Message content is required" }, { status: 400 });
     }
-
-    // Check message limit for this user in this ride
-    const countRes = await db.execute({
-      sql: "SELECT COUNT(*) as count FROM messages WHERE rideId = ? AND uid = ?",
-      args: [rideId, user.uid],
-    });
-    const countRow = countRes.rows[0] as any;
-    if (countRow && Number(countRow.count) >= MESSAGE_LIMIT) {
-      return NextResponse.json({ error: "Message limit reached for this ride." }, { status: 400 });
+    if (text.length > MAX_LENGTH) {
+      return NextResponse.json(
+        { error: `Messages must be under ${MAX_LENGTH} characters` },
+        { status: 400 }
+      );
     }
 
-    const messageId = randomUUID();
-    const createdAt = Date.now();
+    const countRes = await db.execute({
+      sql: "SELECT COUNT(*) AS count FROM messages WHERE rideId = ? AND uid = ?",
+      args: [params.id, user.uid],
+    });
+    if (Number((countRes.rows[0] as any).count) >= MESSAGE_LIMIT) {
+      return NextResponse.json(
+        { error: "Message limit reached for this ride." },
+        { status: 400 }
+      );
+    }
 
-    // Insert message
     await db.execute({
       sql: "INSERT INTO messages (id, rideId, uid, displayName, text, createdAt) VALUES (?, ?, ?, ?, ?, ?)",
-      args: [messageId, rideId, user.uid, user.displayName, text.trim(), createdAt]
+      args: [randomUUID(), params.id, user.uid, user.displayName, text, Date.now()],
     });
 
     return NextResponse.json({ success: true });
-  } catch (err: any) {
+  } catch (err) {
     console.error("Send message error:", err);
     return NextResponse.json({ error: "Failed to send message" }, { status: 500 });
   }

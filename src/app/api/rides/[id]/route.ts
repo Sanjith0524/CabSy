@@ -1,19 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, initDb } from "@/lib/db";
-import jwt from "jsonwebtoken";
-import { cookies } from "next/headers";
+import { getAuthUser } from "@/lib/auth";
 
-const JWT_SECRET = process.env.JWT_SECRET || "cabsy_secret_key_12345";
-
-function getAuthUser() {
-  const token = cookies().get("cabsy_session")?.value;
-  if (!token) return null;
-  try {
-    return jwt.verify(token, JWT_SECRET) as any;
-  } catch {
-    return null;
-  }
-}
+const RIDE_COLUMNS =
+  "id, pickup, destination, date, time, seatsTotal, seatsTaken, status, creatorUid, creatorName, notes, createdAt, expiresAt";
 
 export async function GET(
   request: NextRequest,
@@ -26,19 +16,17 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = params;
     const rideRes = await db.execute({
-      sql: "SELECT * FROM rides WHERE id = ?",
-      args: [id],
+      sql: `SELECT ${RIDE_COLUMNS} FROM rides WHERE id = ?`,
+      args: [params.id],
     });
     const ride = rideRes.rows[0];
-    
     if (!ride) {
       return NextResponse.json({ error: "Ride not found" }, { status: 404 });
     }
-    
+
     return NextResponse.json({ ride });
-  } catch (err: any) {
+  } catch (err) {
     console.error("Get ride error:", err);
     return NextResponse.json({ error: "Failed to fetch ride details" }, { status: 500 });
   }
@@ -55,27 +43,27 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = params;
     const rideRes = await db.execute({
-      sql: "SELECT * FROM rides WHERE id = ?",
-      args: [id],
+      sql: "SELECT creatorUid FROM rides WHERE id = ?",
+      args: [params.id],
     });
     const ride = rideRes.rows[0] as any;
-    
     if (!ride) {
       return NextResponse.json({ error: "Ride not found" }, { status: 404 });
     }
-
     if (ride.creatorUid !== user.uid) {
-      return NextResponse.json({ error: "Forbidden: You did not create this ride" }, { status: 403 });
+      return NextResponse.json(
+        { error: "Forbidden: You did not create this ride" },
+        { status: 403 }
+      );
     }
 
     await db.execute({
       sql: "UPDATE rides SET status = 'cancelled' WHERE id = ?",
-      args: [id],
+      args: [params.id],
     });
     return NextResponse.json({ success: true });
-  } catch (err: any) {
+  } catch (err) {
     console.error("Cancel ride error:", err);
     return NextResponse.json({ error: "Failed to cancel ride" }, { status: 500 });
   }
