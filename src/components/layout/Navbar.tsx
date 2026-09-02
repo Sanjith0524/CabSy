@@ -7,6 +7,7 @@ import { LayoutDashboard, Search, Plus, User, LogOut, Sun, Moon } from "lucide-r
 import { useState, useRef, useEffect } from "react";
 import clsx from "clsx";
 import { useTheme } from "@/hooks/use-theme";
+import NotificationBell from "@/components/layout/NotificationBell";
 
 export default function Navbar() {
   const { user, signOut } = useAuth();
@@ -77,7 +78,9 @@ export default function Navbar() {
         </div>
 
         {/* Right Side */}
-        <div className="flex items-center">
+        <div className="flex items-center gap-1">
+
+          <NotificationBell />
 
           {/* MOBILE NAV — icon only, colour-only active state */}
           <nav className="flex sm:hidden items-center gap-1">

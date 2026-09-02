@@ -44,3 +44,22 @@ export interface Message {
   text: string;
   createdAt: Timestamp;
 }
+
+export type NotificationType =
+  | "ride_join"
+  | "ride_leave"
+  | "ride_removed"
+  | "ride_cancelled"
+  | "ride_full"
+  | "chat_message"
+  | "ride_reminder";
+
+export interface AppNotification {
+  id: string;
+  type: NotificationType;
+  rideId: string | null;
+  title: string;
+  body: string;
+  readAt: number | null;
+  createdAt: number;
+}

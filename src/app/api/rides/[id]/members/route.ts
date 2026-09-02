@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, initDb } from "@/lib/db";
 import { getAuthUser } from "@/lib/auth";
+import {
+  notifyRideJoined,
+  notifyRideFull,
+  notifyRideLeft,
+  notifyMemberRemoved,
+  RideCtx,
+} from "@/lib/notifications";
 
 export async function GET(
   request: NextRequest,
@@ -68,6 +75,16 @@ export async function POST(
       });
 
       await tx.commit();
+
+      const ctx: RideCtx = {
+        id: rideId,
+        destination: ride.destination,
+        creatorUid: ride.creatorUid,
+        creatorEmail: ride.creatorEmail,
+      };
+      await notifyRideJoined(ctx, user.displayName);
+      if (newStatus === "full") await notifyRideFull(ctx);
+
       return NextResponse.json({ success: true });
     } catch (e) {
       await tx.rollback();
@@ -98,7 +115,7 @@ export async function DELETE(
       new URL(request.url).searchParams.get("uid") || user.uid;
 
     const rideRes = await db.execute({
-      sql: "SELECT creatorUid, status FROM rides WHERE id = ?",
+      sql: "SELECT creatorUid, creatorEmail, destination, status FROM rides WHERE id = ?",
       args: [rideId],
     });
     const ride = rideRes.rows[0] as any;
@@ -113,13 +130,15 @@ export async function DELETE(
       );
     }
 
+    let removedEmail = "";
     const tx = await db.transaction("write");
     try {
       const existingRes = await tx.execute({
-        sql: "SELECT 1 FROM ride_members WHERE rideId = ? AND uid = ?",
+        sql: "SELECT email FROM ride_members WHERE rideId = ? AND uid = ?",
         args: [rideId, targetUid],
       });
       if (!existingRes.rows[0]) throw new Error("Member not found in this ride");
+      removedEmail = String((existingRes.rows[0] as any).email ?? "");
 
       await tx.execute({
         sql: "DELETE FROM ride_members WHERE rideId = ? AND uid = ?",
@@ -139,6 +158,23 @@ export async function DELETE(
       });
 
       await tx.commit();
+
+      const ctx: RideCtx = {
+        id: rideId,
+        destination: ride.destination,
+        creatorUid: ride.creatorUid,
+        creatorEmail: ride.creatorEmail,
+      };
+      if (targetUid === user.uid) {
+        // Self-leave — tell the host (unless the host left their own ride).
+        if (user.uid !== ride.creatorUid) {
+          await notifyRideLeft(ctx, user.displayName);
+        }
+      } else {
+        // Host removed someone.
+        await notifyMemberRemoved(ctx, targetUid, removedEmail);
+      }
+
       return NextResponse.json({ success: true });
     } catch (e) {
       await tx.rollback();

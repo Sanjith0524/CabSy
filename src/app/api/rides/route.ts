@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, initDb } from "@/lib/db";
 import { randomUUID } from "crypto";
 import { getAuthUser } from "@/lib/auth";
+import { runSweep } from "@/lib/sweep";
 
 // Columns safe to expose in listings — deliberately excludes creatorEmail.
 const RIDE_COLUMNS =
@@ -14,6 +15,9 @@ export async function GET() {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Opportunistic housekeeping — self-throttled, so cheap to call on every poll.
+    await runSweep();
 
     const now = Date.now();
     const ridesRes = await db.execute({

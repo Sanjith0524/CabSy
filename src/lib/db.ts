@@ -109,6 +109,30 @@ async function initDb() {
       )
     `);
 
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id TEXT PRIMARY KEY,
+        uid TEXT NOT NULL,
+        type TEXT NOT NULL,
+        rideId TEXT,
+        title TEXT NOT NULL,
+        body TEXT NOT NULL,
+        readAt INTEGER,
+        createdAt INTEGER NOT NULL
+      )
+    `);
+    await db.execute(
+      "CREATE INDEX IF NOT EXISTS idx_notifications_uid ON notifications (uid, createdAt DESC)"
+    );
+
+    // Small key/value store for cross-instance bookkeeping (e.g. last sweep time).
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS meta (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      )
+    `);
+
     // Run migration alter tables to add columns for existing databases
     try {
       await db.execute("ALTER TABLE users ADD COLUMN isEmailVerified INTEGER DEFAULT 0");
@@ -118,6 +142,15 @@ async function initDb() {
     } catch (_) {}
     try {
       await db.execute("ALTER TABLE user_otps ADD COLUMN purpose TEXT DEFAULT 'verify'");
+    } catch (_) {}
+    try {
+      await db.execute("ALTER TABLE users ADD COLUMN notifyEmail INTEGER DEFAULT 1");
+    } catch (_) {}
+    try {
+      await db.execute("ALTER TABLE users ADD COLUMN notifyChat INTEGER DEFAULT 1");
+    } catch (_) {}
+    try {
+      await db.execute("ALTER TABLE rides ADD COLUMN reminderSent INTEGER DEFAULT 0");
     } catch (_) {}
 
     isInitialized = true;

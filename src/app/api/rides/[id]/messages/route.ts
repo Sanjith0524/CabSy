@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, initDb } from "@/lib/db";
 import { randomUUID } from "crypto";
 import { getAuthUser, isRideMember } from "@/lib/auth";
+import { notifyNewMessage, RideCtx } from "@/lib/notifications";
 
 const MESSAGE_LIMIT = 25;
 const MAX_LENGTH = 500;
@@ -78,6 +79,32 @@ export async function POST(
       sql: "INSERT INTO messages (id, rideId, uid, displayName, text, createdAt) VALUES (?, ?, ?, ?, ?, ?)",
       args: [randomUUID(), params.id, user.uid, user.displayName, text, Date.now()],
     });
+
+    const [rideRes, membersRes] = await Promise.all([
+      db.execute({
+        sql: "SELECT destination, creatorUid, creatorEmail FROM rides WHERE id = ?",
+        args: [params.id],
+      }),
+      db.execute({
+        sql: "SELECT uid FROM ride_members WHERE rideId = ?",
+        args: [params.id],
+      }),
+    ]);
+    const ride = rideRes.rows[0] as any;
+    if (ride) {
+      const ctx: RideCtx = {
+        id: params.id,
+        destination: ride.destination,
+        creatorUid: ride.creatorUid,
+        creatorEmail: ride.creatorEmail,
+      };
+      await notifyNewMessage(
+        ctx,
+        user.uid,
+        user.displayName,
+        (membersRes.rows as any[]).map((m) => m.uid)
+      );
+    }
 
     return NextResponse.json({ success: true });
   } catch (err) {

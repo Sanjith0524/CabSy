@@ -90,3 +90,72 @@ export async function sendOTPEmail(email: string, otp: string, type: OTPType) {
     html: otpEmailHtml(otp, ACTION_TEXT[type]),
   });
 }
+
+const APP_URL =
+  process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
+  "https://cabsy-10.vercel.app";
+
+/** Shared shell for transactional (non-OTP) emails — same look as the OTP mail. */
+function notificationEmailHtml(
+  heading: string,
+  message: string,
+  cta?: { text: string; path: string }
+): string {
+  const button = cta
+    ? `<a href="${APP_URL}${cta.path}" style="display: inline-block; background-color: ${C.primary}; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; padding: 12px 28px; border-radius: 999px;">${cta.text}</a>`
+    : "";
+  return `
+  <div style="background-color: ${C.bg}; padding: 40px 16px; font-family: ${FONT_STACK};">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="width: 480px; max-width: 100%; border-collapse: collapse; background-color: ${C.surface}; border: 1px solid ${C.border}; border-radius: 18px; box-shadow: 0 1px 3px rgba(20,20,46,.06), 0 10px 28px -12px rgba(20,20,46,.14); overflow: hidden;">
+            <tr>
+              <td style="padding: 40px 40px 32px 40px; text-align: center;">
+
+                <div style="font-size: 22px; font-weight: 700; letter-spacing: -0.01em; color: ${C.primary};">
+                  CabSy
+                </div>
+
+                <div style="border-top: 1px solid ${C.border}; margin: 24px 0 28px 0;"></div>
+
+                <h2 style="font-size: 20px; font-weight: 600; letter-spacing: -0.015em; margin: 0 0 12px 0; color: ${C.heading};">
+                  ${heading}
+                </h2>
+
+                <p style="font-size: 14px; line-height: 1.6; color: ${C.body}; margin: 0 auto ${button ? "28px" : "0"} auto; max-width: 380px;">
+                  ${message}
+                </p>
+
+                ${button}
+
+                <div style="border-top: 1px solid ${C.border}; margin-top: 28px; padding-top: 20px;">
+                  <p style="font-size: 11px; line-height: 1.5; color: ${C.muted}; margin: 0;">
+                    You're receiving this because you're part of this ride on CabSy. Manage email alerts in your profile settings.
+                  </p>
+                </div>
+
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </div>
+  `;
+}
+
+export async function sendNotificationEmail(opts: {
+  to: string;
+  subject: string;
+  heading: string;
+  message: string;
+  cta?: { text: string; path: string };
+}) {
+  await transporter.sendMail({
+    from: `"CabSy" <${process.env.SMTP_USER}>`,
+    to: opts.to,
+    subject: opts.subject,
+    html: notificationEmailHtml(opts.heading, opts.message, opts.cta),
+  });
+}

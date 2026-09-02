@@ -5,13 +5,47 @@ import { useAuth } from "@/lib/auth-context";
 import { subscribeToRides } from "@/lib/firestore";
 import ProtectedLayout from "@/components/layout/ProtectedLayout";
 import { Ride } from "@/types";
-import { LogOut, ShieldCheck, Mail, CheckCircle2, Sun, Moon } from "lucide-react";
+import { LogOut, ShieldCheck, Mail, CheckCircle2, Sun, Moon, Bell } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 
+function Toggle({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      onClick={() => onChange(!checked)}
+      className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${
+        checked ? "bg-primary" : "bg-surface-container-high"
+      }`}
+    >
+      <span
+        className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-surface shadow-sm transition-transform ${
+          checked ? "translate-x-5" : ""
+        }`}
+      />
+    </button>
+  );
+}
+
 export default function ProfilePage() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, updatePreferences } = useAuth();
   const { theme, setTheme } = useTheme();
   const [myRides, setMyRides] = useState<Ride[]>([]);
+  const [pendingEmail, setPendingEmail] = useState<boolean | null>(null);
+  const [pendingChat, setPendingChat] = useState<boolean | null>(null);
+
+  const notifyEmail = (user?.notifyEmail ?? 1) === 1;
+  const notifyChat = (user?.notifyChat ?? 1) === 1;
 
   useEffect(() => {
     const unsub = subscribeToRides((rides) => {
@@ -114,6 +148,50 @@ export default function ProfilePage() {
             >
               <Moon size={14} /> Dark
             </button>
+          </div>
+        </div>
+
+        {/* Notifications */}
+        <div className="card p-5 mb-6">
+          <h4 className="text-[15px] font-semibold text-on-surface flex items-center gap-2 mb-1">
+            <Bell size={16} className="text-primary" /> Notifications
+          </h4>
+          <p className="text-sm text-on-surface-variant mb-4">
+            In-app alerts always show in the bell. These control the extras.
+          </p>
+
+          <div className="flex items-center justify-between py-3 border-t border-surface-variant">
+            <div className="min-w-0 pr-4">
+              <p className="text-sm font-medium text-on-surface">Email alerts</p>
+              <p className="text-[13px] text-on-surface-variant mt-0.5">
+                When someone joins, a ride is cancelled, or you&apos;re removed.
+              </p>
+            </div>
+            <Toggle
+              checked={pendingEmail ?? notifyEmail}
+              label="Email alerts"
+              onChange={(v) => {
+                setPendingEmail(v);
+                updatePreferences({ notifyEmail: v }).finally(() => setPendingEmail(null));
+              }}
+            />
+          </div>
+
+          <div className="flex items-center justify-between py-3 border-t border-surface-variant">
+            <div className="min-w-0 pr-4">
+              <p className="text-sm font-medium text-on-surface">Ride chat activity</p>
+              <p className="text-[13px] text-on-surface-variant mt-0.5">
+                A bell alert when there are new messages in a ride you&apos;re in.
+              </p>
+            </div>
+            <Toggle
+              checked={pendingChat ?? notifyChat}
+              label="Ride chat activity"
+              onChange={(v) => {
+                setPendingChat(v);
+                updatePreferences({ notifyChat: v }).finally(() => setPendingChat(null));
+              }}
+            />
           </div>
         </div>
 

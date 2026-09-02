@@ -1,4 +1,4 @@
-import type { Ride, RideMember, Message } from "@/types";
+import type { Ride, RideMember, Message, AppNotification } from "@/types";
 
 const mapTimestamp = (val: any) => {
   if (!val) return undefined;
@@ -228,6 +228,49 @@ export async function getUserMessageCount(
     return messages.filter((m: any) => m.uid === uid).length;
   } catch {
     return 0;
+  }
+}
+
+// ─── Notifications ────────────────────────────────────────────────────────────
+
+export function subscribeToNotifications(
+  callback: (data: { notifications: AppNotification[]; unread: number }) => void
+): () => void {
+  let active = true;
+  const fetchNotifications = async () => {
+    try {
+      const res = await fetch("/api/notifications");
+      if (!res.ok) return;
+      const data = await res.json();
+      if (active && data.notifications) {
+        callback({
+          notifications: data.notifications as AppNotification[],
+          unread: Number(data.unread) || 0,
+        });
+      }
+    } catch {
+      /* transient — the next poll will retry */
+    }
+  };
+
+  fetchNotifications();
+  const interval = setInterval(fetchNotifications, 5000);
+
+  return () => {
+    active = false;
+    clearInterval(interval);
+  };
+}
+
+export async function markNotificationsRead(id?: string): Promise<void> {
+  try {
+    await fetch("/api/notifications/read", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(id ? { id } : {}),
+    });
+  } catch {
+    /* best effort */
   }
 }
 
