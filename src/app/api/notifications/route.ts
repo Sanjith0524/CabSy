@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { db, initDb } from "@/lib/db";
 import { getAuthUser } from "@/lib/auth";
 
+// Reads the session cookie — must run per-request, never statically prerendered.
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     await initDb();
