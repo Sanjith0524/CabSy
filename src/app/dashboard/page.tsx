@@ -7,7 +7,7 @@ import { subscribeToRides } from "@/lib/firestore";
 import ProtectedLayout from "@/components/layout/ProtectedLayout";
 import RideCard from "@/components/rides/RideCard";
 import { Ride } from "@/types";
-import { Search, MapPin, Calendar, Compass, ShieldAlert, ShieldCheck, TrendingUp } from "lucide-react";
+import { Search, MapPin, Calendar, Compass, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 
@@ -81,11 +81,8 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* Main Content Layout */}
-      <div className="flex flex-col lg:flex-row items-start gap-6">
-
-        {/* Main Content Area */}
-        <div className="flex-1 w-full flex flex-col gap-6">
+      {/* Main Content */}
+      <div className="flex flex-col gap-6">
 
           {/* Find Your Next Ride */}
           <div className="card p-5">
@@ -210,45 +207,6 @@ export default function DashboardPage() {
               </div>
             </section>
           )}
-        </div>
-
-        {/* Sidebar */}
-        <div className="w-full lg:w-80 flex flex-col gap-4">
-
-          {/* Trust Panel */}
-          <div className="card p-5">
-            <h4 className="text-[15px] font-semibold text-on-surface mb-4 flex items-center gap-2">
-              <ShieldCheck className="text-primary" size={16} />
-              Trust &amp; safety
-            </h4>
-            <div className="flex flex-col gap-3.5 text-sm text-on-surface-variant leading-relaxed">
-              <div className="flex items-start gap-2.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
-                <p>Every rider signs in with a verified college email.</p>
-              </div>
-              <div className="flex items-start gap-2.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
-                <p>Check a student ID before you get in the cab.</p>
-              </div>
-              <div className="flex items-start gap-2.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
-                <p>Split the fare and share the receipt in the ride chat.</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Campus Notice */}
-          <div className="card p-5 bg-primary-container/40 border-primary/20">
-            <div className="flex items-center gap-2 mb-2.5">
-              <ShieldAlert className="text-primary flex-shrink-0" size={16} />
-              <h4 className="text-[15px] font-semibold text-on-surface">Campus notice</h4>
-            </div>
-            <p className="text-sm text-on-surface-variant leading-relaxed">
-              Rides leaving after 9:00 PM need to sort out the hostel gate and curfew pass ahead of time. Keep the group chat updated so nobody gets left at the gate.
-            </p>
-          </div>
-
-        </div>
 
       </div>
 
