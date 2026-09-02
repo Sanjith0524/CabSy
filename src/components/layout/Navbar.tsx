@@ -6,32 +6,14 @@ import { useAuth } from "@/lib/auth-context";
 import { LayoutDashboard, Search, Plus, User, LogOut, Sun, Moon } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import clsx from "clsx";
+import { useTheme } from "@/hooks/use-theme";
 
 export default function Navbar() {
   const { user, signOut } = useAuth();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [theme, setTheme] = useState<"light" | "dark">("dark");
+  const { theme, toggleTheme } = useTheme();
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const isDark = document.documentElement.classList.contains("dark");
-    setTheme(isDark ? "dark" : "light");
-  }, []);
-
-  const toggleTheme = () => {
-    const nextTheme = theme === "dark" ? "light" : "dark";
-    if (nextTheme === "dark") {
-      document.documentElement.classList.add("dark");
-      document.documentElement.classList.remove("light");
-      localStorage.theme = "dark";
-    } else {
-      document.documentElement.classList.add("light");
-      document.documentElement.classList.remove("dark");
-      localStorage.theme = "light";
-    }
-    setTheme(nextTheme);
-  };
 
   const initials = user?.displayName
     ? user.displayName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
@@ -97,21 +79,20 @@ export default function Navbar() {
         {/* Right Side */}
         <div className="flex items-center">
 
-          {/* MOBILE NAV */}
+          {/* MOBILE NAV — icon only, colour-only active state */}
           <nav className="flex sm:hidden items-center gap-1">
             {mobileLinks.map(({ href, label, icon: Icon }) => (
               <Link
                 key={href}
                 href={href}
+                aria-label={label}
+                aria-current={pathname === href ? "page" : undefined}
                 className={clsx(
-                  "flex flex-col items-center justify-center w-12 h-12 rounded-2xl transition-colors",
-                  pathname === href
-                    ? "text-on-primary-container bg-primary-container"
-                    : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low"
+                  "flex items-center justify-center w-11 h-11 rounded-full",
+                  pathname === href ? "text-primary" : "text-on-surface-variant"
                 )}
               >
-                <Icon size={17} />
-                <span className="text-[10px] font-semibold mt-0.5">{label.split(" ")[0]}</span>
+                <Icon size={20} />
               </Link>
             ))}
           </nav>

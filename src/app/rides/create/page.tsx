@@ -138,7 +138,7 @@ export default function CreateRidePage() {
               <Users size={14} className="text-primary" />
               Total seats (including you)
             </label>
-            <div className="flex items-center gap-5 mt-1">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-1">
               <div className="flex items-center rounded-full bg-surface-container-low p-1">
                 <button
                   type="button"

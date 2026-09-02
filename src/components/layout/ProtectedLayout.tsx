@@ -40,7 +40,7 @@ export default function ProtectedLayout({
       <Navbar />
 
       {/* Main Content container */}
-      <main className="pt-24 px-6 md:px-margin-desktop min-h-screen pb-24 sm:pb-12">
+      <main className="pt-20 sm:pt-24 px-5 sm:px-6 md:px-margin-desktop min-h-screen pb-14">
         <div className="max-w-5xl mx-auto">{children}</div>
       </main>
     </div>

@@ -126,7 +126,7 @@ export default function RideDetailPage() {
       <ProtectedLayout>
         <div className="card p-10 text-center max-w-md mx-auto">
           <p className="text-on-surface-variant font-medium">Ride request not found.</p>
-          <Link href="/rides" className="text-primary text-[10px] font-mono uppercase tracking-widest mt-4 inline-flex items-center gap-1.5 hover:underline">
+          <Link href="/rides" className="text-primary text-[13px] font-semibold mt-4 inline-flex items-center gap-1.5 hover:underline">
             <ArrowLeft size={14} /> Back to rides
           </Link>
         </div>

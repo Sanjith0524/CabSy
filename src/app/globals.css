@@ -118,6 +118,7 @@
   * {
     box-sizing: border-box;
     border-color: var(--color-surface-variant);
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
@@ -341,29 +342,26 @@
   background: var(--color-outline-variant);
 }
 
-/* Global Font Size Scaling & Arbitrary Pixel Size Adjustments */
 html {
   font-size: 100%;
+  -webkit-text-size-adjust: 100%;
 }
 
-.text-\[8px\] {
-  font-size: 10px !important;
-}
-
-.text-\[9px\] {
-  font-size: 11px !important;
-}
-
-.text-\[10px\] {
-  font-size: 12px !important;
-}
-
-/* Native date/time controls follow the theme without the invert hack */
+/* Native date/time controls: follow the theme, and match the sizing of
+   text inputs on iOS Safari (which otherwise shrink-wraps them). */
 input[type="date"],
 input[type="time"] {
   color-scheme: light;
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 2.75rem;
+  width: 100%;
 }
 .dark input[type="date"],
 .dark input[type="time"] {
   color-scheme: dark;
+}
+input[type="date"]::-webkit-date-and-time-value,
+input[type="time"]::-webkit-date-and-time-value {
+  text-align: left;
 }

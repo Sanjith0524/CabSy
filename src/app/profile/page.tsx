@@ -5,10 +5,12 @@ import { useAuth } from "@/lib/auth-context";
 import { subscribeToRides } from "@/lib/firestore";
 import ProtectedLayout from "@/components/layout/ProtectedLayout";
 import { Ride } from "@/types";
-import { LogOut, ShieldCheck, Mail, CheckCircle2 } from "lucide-react";
+import { LogOut, ShieldCheck, Mail, CheckCircle2, Sun, Moon } from "lucide-react";
+import { useTheme } from "@/hooks/use-theme";
 
 export default function ProfilePage() {
   const { user, signOut } = useAuth();
+  const { theme, setTheme } = useTheme();
   const [myRides, setMyRides] = useState<Ride[]>([]);
 
   useEffect(() => {
@@ -82,6 +84,36 @@ export default function ProfilePage() {
               {myRides.filter((r) => r.status === "open").length}
             </span>
             <span className="text-[13px] text-on-surface-variant block mt-2.5">Open requests</span>
+          </div>
+        </div>
+
+        {/* Appearance */}
+        <div className="card p-5 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h4 className="text-[15px] font-semibold text-on-surface">Appearance</h4>
+            <p className="text-sm text-on-surface-variant mt-0.5">How CabSy looks on this device.</p>
+          </div>
+          <div className="flex items-center rounded-full bg-surface-container-low p-1 flex-shrink-0 self-start sm:self-auto">
+            <button
+              type="button"
+              onClick={() => setTheme("light")}
+              aria-pressed={theme === "light"}
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[13px] font-semibold transition-colors ${
+                theme === "light" ? "bg-surface text-primary shadow-sm" : "text-on-surface-variant"
+              }`}
+            >
+              <Sun size={14} /> Light
+            </button>
+            <button
+              type="button"
+              onClick={() => setTheme("dark")}
+              aria-pressed={theme === "dark"}
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[13px] font-semibold transition-colors ${
+                theme === "dark" ? "bg-surface text-primary shadow-sm" : "text-on-surface-variant"
+              }`}
+            >
+              <Moon size={14} /> Dark
+            </button>
           </div>
         </div>
 
