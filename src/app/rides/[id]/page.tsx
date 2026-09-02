@@ -80,6 +80,8 @@ export default function RideDetailPage() {
 
   const handleLeave = async () => {
     if (!user || !ride) return;
+    if (!confirm("Leave this ride? Your seat will open up for someone else.")) return;
+    setActionError("");
     setActionLoading(true);
     try {
       await leaveRide(ride.id, user.uid);

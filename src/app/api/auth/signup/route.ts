@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
 
     await db.execute({
-      sql: "INSERT OR REPLACE INTO user_otps (email, otp, expiresAt, attempts) VALUES (?, ?, ?, 0)",
+      sql: "INSERT OR REPLACE INTO user_otps (email, otp, expiresAt, attempts, purpose) VALUES (?, ?, ?, 0, 'verify')",
       args: [email, otp, expiresAt],
     });
 

@@ -63,7 +63,8 @@ async function initDb() {
         email TEXT PRIMARY KEY,
         otp TEXT NOT NULL,
         expiresAt INTEGER NOT NULL,
-        attempts INTEGER DEFAULT 0
+        attempts INTEGER DEFAULT 0,
+        purpose TEXT DEFAULT 'verify'
       )
     `);
 
@@ -114,6 +115,9 @@ async function initDb() {
     } catch (_) {}
     try {
       await db.execute("ALTER TABLE user_otps ADD COLUMN attempts INTEGER DEFAULT 0");
+    } catch (_) {}
+    try {
+      await db.execute("ALTER TABLE user_otps ADD COLUMN purpose TEXT DEFAULT 'verify'");
     } catch (_) {}
 
     isInitialized = true;

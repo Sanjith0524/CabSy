@@ -22,6 +22,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<{ requiresOTP: boolean; email?: string } | null>;
   verifyOTP: (email: string, code: string) => Promise<boolean>;
   signup: (name: string, email: string, password: string) => Promise<{ requiresOTP: boolean; email?: string } | null>;
+  forgotPassword: (email: string) => Promise<boolean>;
+  resetPassword: (email: string, code: string, password: string) => Promise<boolean>;
   signOut: () => Promise<void>;
   authError: string | null;
 }
@@ -32,6 +34,8 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => null,
   verifyOTP: async () => false,
   signup: async () => null,
+  forgotPassword: async () => false,
+  resetPassword: async () => false,
   signOut: async () => {},
   authError: null,
 });
@@ -138,6 +142,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const forgotPassword = async (email: string): Promise<boolean> => {
+    setAuthError(null);
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (res.ok) return true;
+      setAuthError(data.error || "Could not send reset code");
+      return false;
+    } catch {
+      setAuthError("Could not send reset code. Please try again.");
+      return false;
+    }
+  };
+
+  const resetPassword = async (
+    email: string,
+    code: string,
+    password: string
+  ): Promise<boolean> => {
+    setAuthError(null);
+    try {
+      const res = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code, password }),
+      });
+      const data = await res.json();
+      if (res.ok && data.user) {
+        setUser(data.user);
+        setAuthError(null);
+        return true;
+      }
+      setAuthError(data.error || "Password reset failed");
+      return false;
+    } catch {
+      setAuthError("Password reset failed. Please try again.");
+      return false;
+    }
+  };
+
   const signOut = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
@@ -150,7 +198,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, verifyOTP, signup, signOut, authError }}
+      value={{ user, loading, login, verifyOTP, signup, forgotPassword, resetPassword, signOut, authError }}
     >
       {children}
     </AuthContext.Provider>

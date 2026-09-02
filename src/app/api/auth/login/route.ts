@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = Date.now() + 5 * 60 * 1000;
       await db.execute({
-        sql: "INSERT OR REPLACE INTO user_otps (email, otp, expiresAt, attempts) VALUES (?, ?, ?, 0)",
+        sql: "INSERT OR REPLACE INTO user_otps (email, otp, expiresAt, attempts, purpose) VALUES (?, ?, ?, 0, 'verify')",
         args: [email, otp, expiresAt],
       });
       if (!IS_PROD) console.log(`[2FA OTP - LOGIN] ${email}: ${otp}`);

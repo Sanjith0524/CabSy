@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, initDb } from "@/lib/db";
+import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 import { signSession, SESSION_COOKIE, sessionCookieOptions } from "@/lib/auth";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
@@ -14,28 +15,38 @@ export async function POST(request: NextRequest) {
     const email =
       typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
     const code = typeof body.code === "string" ? body.code.trim() : "";
+    const password = typeof body.password === "string" ? body.password : "";
 
-    if (!email || !code) {
-      return NextResponse.json({ error: "Missing email or code" }, { status: 400 });
+    if (!email || !code || !password) {
+      return NextResponse.json(
+        { error: "Email, code and new password are required" },
+        { status: 400 }
+      );
+    }
+    if (password.length < 8 || password.length > 128) {
+      return NextResponse.json(
+        { error: "Password must be at least 8 characters" },
+        { status: 400 }
+      );
     }
 
     const ip = clientIp(request);
-    const limited = rateLimit(`otp:${ip}:${email}`, 10, 15 * 60 * 1000);
+    const limited = rateLimit(`reset:${ip}:${email}`, 10, 15 * 60 * 1000);
     if (!limited.ok) {
       return NextResponse.json(
-        { error: "Too many attempts. Sign in again to get a new code." },
+        { error: "Too many attempts. Request a new code and try again." },
         { status: 429, headers: { "Retry-After": String(limited.retryAfter) } }
       );
     }
 
     const otpRes = await db.execute({
-      sql: "SELECT * FROM user_otps WHERE email = ? AND purpose = 'verify'",
+      sql: "SELECT * FROM user_otps WHERE email = ? AND purpose = 'reset'",
       args: [email],
     });
     const otpRecord = otpRes.rows[0] as any;
     if (!otpRecord) {
       return NextResponse.json(
-        { error: "No pending verification code. Please sign in again." },
+        { error: "No pending reset request. Please start again." },
         { status: 400 }
       );
     }
@@ -43,7 +54,7 @@ export async function POST(request: NextRequest) {
     if (Date.now() > Number(otpRecord.expiresAt)) {
       await db.execute({ sql: "DELETE FROM user_otps WHERE email = ?", args: [email] });
       return NextResponse.json(
-        { error: "Verification code expired. Please sign in again." },
+        { error: "Reset code expired. Please start again." },
         { status: 400 }
       );
     }
@@ -51,7 +62,7 @@ export async function POST(request: NextRequest) {
     if (Number(otpRecord.attempts ?? 0) >= MAX_ATTEMPTS) {
       await db.execute({ sql: "DELETE FROM user_otps WHERE email = ?", args: [email] });
       return NextResponse.json(
-        { error: "Too many incorrect codes. Please sign in again." },
+        { error: "Too many incorrect codes. Please start again." },
         { status: 400 }
       );
     }
@@ -61,7 +72,7 @@ export async function POST(request: NextRequest) {
       if (attempts >= MAX_ATTEMPTS) {
         await db.execute({ sql: "DELETE FROM user_otps WHERE email = ?", args: [email] });
         return NextResponse.json(
-          { error: "Too many incorrect codes. Please sign in again." },
+          { error: "Too many incorrect codes. Please start again." },
           { status: 400 }
         );
       }
@@ -75,21 +86,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Valid — consume the OTP and mark the account verified.
-    await db.execute({ sql: "DELETE FROM user_otps WHERE email = ?", args: [email] });
-    await db.execute({
-      sql: "UPDATE users SET isEmailVerified = 1 WHERE email = ?",
-      args: [email],
-    });
-
     const userRes = await db.execute({
       sql: "SELECT * FROM users WHERE email = ?",
       args: [email],
     });
     const user = userRes.rows[0] as any;
     if (!user) {
-      return NextResponse.json({ error: "User profile not found." }, { status: 400 });
+      await db.execute({ sql: "DELETE FROM user_otps WHERE email = ?", args: [email] });
+      return NextResponse.json({ error: "Account not found." }, { status: 400 });
     }
+
+    // Valid — set the new password, consume the code. Proving control of the
+    // inbox also confirms the address, so mark it verified.
+    const passwordHash = await bcrypt.hash(password, 10);
+    await db.execute({
+      sql: "UPDATE users SET passwordHash = ?, isEmailVerified = 1 WHERE email = ?",
+      args: [passwordHash, email],
+    });
+    await db.execute({ sql: "DELETE FROM user_otps WHERE email = ?", args: [email] });
 
     const token = signSession({
       uid: user.uid,
@@ -108,9 +122,9 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (err) {
-    console.error("OTP verification error:", err);
+    console.error("Reset password error:", err);
     return NextResponse.json(
-      { error: "Verification failed. Please try again." },
+      { error: "Password reset failed. Please try again." },
       { status: 500 }
     );
   }
