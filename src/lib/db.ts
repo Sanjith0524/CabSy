@@ -137,6 +137,21 @@ async function initDb() {
       "CREATE INDEX IF NOT EXISTS idx_notifications_uid ON notifications (uid, createdAt DESC)"
     );
 
+    // Server-side session allowlist — a JWT is only valid while its row is here,
+    // so logout / password-reset can revoke tokens before they expire.
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS sessions (
+        jti TEXT PRIMARY KEY,
+        uid TEXT NOT NULL,
+        createdAt INTEGER NOT NULL,
+        expiresAt INTEGER NOT NULL,
+        userAgent TEXT
+      )
+    `);
+    await db.execute(
+      "CREATE INDEX IF NOT EXISTS idx_sessions_uid ON sessions (uid)"
+    );
+
     // Small key/value store for cross-instance bookkeeping (e.g. last sweep time).
     await db.execute(`
       CREATE TABLE IF NOT EXISTS meta (

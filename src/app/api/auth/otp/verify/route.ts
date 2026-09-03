@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User profile not found." }, { status: 400 });
     }
 
-    const token = signSession({
+    const token = await signSession({
       uid: user.uid,
       email: user.email,
       displayName: user.displayName,

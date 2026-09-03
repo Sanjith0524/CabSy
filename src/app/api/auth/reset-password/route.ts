@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, initDb } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
-import { signSession, SESSION_COOKIE, sessionCookieOptions } from "@/lib/auth";
+import {
+  signSession,
+  revokeAllSessions,
+  SESSION_COOKIE,
+  sessionCookieOptions,
+} from "@/lib/auth";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
 
 const MAX_ATTEMPTS = 5;
@@ -105,7 +110,10 @@ export async function POST(request: NextRequest) {
     });
     await db.execute({ sql: "DELETE FROM user_otps WHERE email = ?", args: [email] });
 
-    const token = signSession({
+    // A password change logs out every existing session.
+    await revokeAllSessions(user.uid);
+
+    const token = await signSession({
       uid: user.uid,
       email: user.email,
       displayName: user.displayName,

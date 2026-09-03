@@ -259,6 +259,7 @@ export async function purgeStaleGuests(): Promise<void> {
       await db.execute({ sql: "DELETE FROM ride_members WHERE uid = ?", args: [uid] });
       await db.execute({ sql: "DELETE FROM messages WHERE uid = ?", args: [uid] });
       await db.execute({ sql: "DELETE FROM notifications WHERE uid = ?", args: [uid] });
+      await db.execute({ sql: "DELETE FROM sessions WHERE uid = ?", args: [uid] });
       await db.execute({ sql: "DELETE FROM users WHERE uid = ?", args: [uid] });
     }
   } catch (err) {

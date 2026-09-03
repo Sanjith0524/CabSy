@@ -17,7 +17,7 @@ export async function GET(
 ) {
   try {
     await initDb();
-    const user = getAuthUser();
+    const user = await getAuthUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -59,7 +59,7 @@ export async function POST(
 ) {
   try {
     await initDb();
-    const user = getAuthUser();
+    const user = await getAuthUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -133,7 +133,7 @@ export async function DELETE(
 ) {
   try {
     await initDb();
-    const user = getAuthUser();
+    const user = await getAuthUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

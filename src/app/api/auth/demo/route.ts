@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     await ensureDemoSeed();
 
     const guest = await createGuestUser();
-    const token = signSession({
+    const token = await signSession({
       uid: guest.uid,
       email: guest.email,
       displayName: guest.displayName,

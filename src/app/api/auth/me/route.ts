@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     await initDb();
-    const session = getAuthUser();
+    const session = await getAuthUser();
     if (!session) {
       return NextResponse.json({ user: null });
     }
@@ -28,7 +28,7 @@ export async function GET() {
 export async function PATCH(request: NextRequest) {
   try {
     await initDb();
-    const session = getAuthUser();
+    const session = await getAuthUser();
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

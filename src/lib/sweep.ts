@@ -81,6 +81,10 @@ export async function runSweep({ force = false }: { force?: boolean } = {}): Pro
             )`,
       args: [now - MSG_TTL_AFTER_DEPART],
     });
+    await db.execute({
+      sql: "DELETE FROM sessions WHERE expiresAt < ?",
+      args: [now],
+    });
 
     // 4. Demo deployment: retire stale guest visitors and keep the sample
     //    feed topped up with fresh, upcoming rides.
