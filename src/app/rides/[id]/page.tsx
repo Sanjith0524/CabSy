@@ -23,7 +23,6 @@ import {
   ArrowLeft,
   Trash2,
   UserMinus,
-  ShieldCheck,
   Navigation,
   Info
 } from "lucide-react";
@@ -291,10 +290,6 @@ export default function RideDetailPage() {
                       <p className="text-[13px] font-semibold text-on-surface truncate leading-tight">
                         {m.displayName}
                       </p>
-                      <span className="pill pill-success mt-0.5">
-                        <ShieldCheck size={9} />
-                        Student
-                      </span>
                     </div>
                   </div>
 

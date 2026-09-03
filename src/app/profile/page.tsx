@@ -58,8 +58,6 @@ export default function ProfilePage() {
     ? user.displayName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
     : "?";
 
-  const domain = user?.email?.split("@")[1] ?? "";
-
   return (
     <ProtectedLayout>
       <div className="max-w-2xl mx-auto">
@@ -97,13 +95,6 @@ export default function ProfilePage() {
               <Mail size={14} className="text-primary flex-shrink-0" />
               {user?.email}
             </p>
-
-            <div className="mt-3.5 flex justify-center sm:justify-start">
-              <span className="pill pill-success">
-                <ShieldCheck size={11} />
-                @{domain} verified student
-              </span>
-            </div>
           </div>
         </div>
 

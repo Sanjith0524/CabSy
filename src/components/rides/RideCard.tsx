@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Ride } from "@/types";
-import { Calendar, ShieldCheck, ArrowRight } from "lucide-react";
+import { Calendar, ArrowRight } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import clsx from "clsx";
 
@@ -88,9 +88,8 @@ export default function RideCard({ ride }: Props) {
               <span className="text-[13px] font-semibold text-on-surface leading-none">
                 {ride.creatorName.split(" ")[0]}
               </span>
-              <span className="pill pill-success">
-                <ShieldCheck size={10} />
-                Verified student
+              <span className="text-[11px] text-on-surface-variant leading-none">
+                Ride host
               </span>
             </div>
           </div>
