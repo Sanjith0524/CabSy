@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, initDb } from "@/lib/db";
 import { randomUUID } from "crypto";
 import { getAuthUser, isRideMember } from "@/lib/auth";
+import { rateLimit } from "@/lib/rate-limit";
 import { notifyNewMessage, RideCtx } from "@/lib/notifications";
 
 const MESSAGE_LIMIT = 25;
@@ -49,6 +50,14 @@ export async function POST(
       return NextResponse.json(
         { error: "Forbidden: join this ride to post in its chat" },
         { status: 403 }
+      );
+    }
+
+    const limited = rateLimit(`msg:${user.uid}`, 30, 5 * 60 * 1000); // 30 / 5 min
+    if (!limited.ok) {
+      return NextResponse.json(
+        { error: "You're sending messages too fast. Slow down a moment." },
+        { status: 429, headers: { "Retry-After": String(limited.retryAfter) } }
       );
     }
 

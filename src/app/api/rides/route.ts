@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, initDb } from "@/lib/db";
 import { randomUUID } from "crypto";
 import { getAuthUser } from "@/lib/auth";
+import { rateLimit } from "@/lib/rate-limit";
 import { runSweep } from "@/lib/sweep";
 
 // Columns safe to expose in listings — deliberately excludes creatorEmail.
@@ -38,6 +39,14 @@ export async function POST(request: NextRequest) {
     const user = getAuthUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const limited = rateLimit(`ride-create:${user.uid}`, 12, 60 * 60 * 1000); // 12 / hour
+    if (!limited.ok) {
+      return NextResponse.json(
+        { error: "You've posted too many rides in a short time. Try again later." },
+        { status: 429, headers: { "Retry-After": String(limited.retryAfter) } }
+      );
     }
 
     const body = await request.json();

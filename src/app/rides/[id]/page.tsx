@@ -36,6 +36,8 @@ export default function RideDetailPage() {
 
   const [ride, setRide] = useState<Ride | null>(null);
   const [members, setMembers] = useState<RideMember[]>([]);
+  const [memberCount, setMemberCount] = useState(0);
+  const [rosterRestricted, setRosterRestricted] = useState(false);
   const [joined, setJoined] = useState(false);
   const [loading, setLoading] = useState(true);
   const [actionError, setActionError] = useState("");
@@ -47,7 +49,11 @@ export default function RideDetailPage() {
       setRide(r);
       setLoading(false);
     });
-    const unsub = subscribeToMembers(id, setMembers);
+    const unsub = subscribeToMembers(id, (snap) => {
+      setMembers(snap.members);
+      setMemberCount(snap.count);
+      setRosterRestricted(snap.restricted);
+    });
     return () => unsub();
   }, [id]);
 
@@ -277,7 +283,18 @@ export default function RideDetailPage() {
 
           {/* Members Card */}
           <div className="card p-5">
-            <h3 className="text-[15px] font-semibold text-on-surface mb-4">Riders ({members.length})</h3>
+            <h3 className="text-[15px] font-semibold text-on-surface mb-4">
+              Riders ({rosterRestricted ? memberCount : members.length})
+            </h3>
+
+            {rosterRestricted && (
+              <p className="text-[13px] text-on-surface-variant leading-relaxed">
+                {memberCount === 1
+                  ? "1 person is on this ride."
+                  : `${memberCount} people are on this ride.`}{" "}
+                Join to see who&apos;s going and open the group chat.
+              </p>
+            )}
 
             <div className="flex flex-col gap-1">
               {members.map((m) => (

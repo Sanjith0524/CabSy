@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, initDb } from "@/lib/db";
-import { getAuthUser } from "@/lib/auth";
+import { getAuthUser, isRideMember } from "@/lib/auth";
+import { rateLimit } from "@/lib/rate-limit";
 import {
   notifyRideJoined,
   notifyRideFull,
   notifyRideLeft,
   notifyMemberRemoved,
+  notifyRideCancelled,
   RideCtx,
 } from "@/lib/notifications";
 
@@ -20,13 +22,31 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const countRes = await db.execute({
+      sql: "SELECT COUNT(*) AS c FROM ride_members WHERE rideId = ?",
+      args: [params.id],
+    });
+    const count = Number((countRes.rows[0] as any).c) || 0;
+
+    // The rider roster (names) is only visible to people in that ride. Everyone
+    // else gets the headcount so the UI can still show how full it is.
+    const member = await isRideMember(params.id, user.uid);
+    if (!member) {
+      return NextResponse.json({ members: [], count, restricted: true, joined: false });
+    }
+
     // Email is intentionally excluded — the UI never shows it, and returning
-    // it here let any user harvest addresses across every ride.
+    // it here let any member harvest addresses across every ride.
     const membersRes = await db.execute({
       sql: "SELECT rideId, uid, displayName, joinedAt FROM ride_members WHERE rideId = ? ORDER BY joinedAt ASC",
       args: [params.id],
     });
-    return NextResponse.json({ members: membersRes.rows });
+    return NextResponse.json({
+      members: membersRes.rows,
+      count,
+      restricted: false,
+      joined: true,
+    });
   } catch (err) {
     console.error("Fetch members error:", err);
     return NextResponse.json({ error: "Failed to fetch ride members" }, { status: 500 });
@@ -42,6 +62,14 @@ export async function POST(
     const user = getAuthUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const limited = rateLimit(`join:${user.uid}`, 40, 60 * 60 * 1000); // 40 / hour
+    if (!limited.ok) {
+      return NextResponse.json(
+        { error: "You're joining rides too quickly. Try again later." },
+        { status: 429, headers: { "Retry-After": String(limited.retryAfter) } }
+      );
     }
 
     const rideId = params.id;
@@ -128,6 +156,30 @@ export async function DELETE(
         { error: "Forbidden: You cannot remove this member" },
         { status: 403 }
       );
+    }
+
+    // Host leaving their own ride cancels it — otherwise it's left with no owner.
+    if (targetUid === user.uid && ride.creatorUid === user.uid) {
+      if (ride.status !== "cancelled") {
+        const membersRes = await db.execute({
+          sql: "SELECT uid, email FROM ride_members WHERE rideId = ?",
+          args: [rideId],
+        });
+        await db.execute({
+          sql: "UPDATE rides SET status = 'cancelled' WHERE id = ?",
+          args: [rideId],
+        });
+        await notifyRideCancelled(
+          {
+            id: rideId,
+            destination: ride.destination,
+            creatorUid: ride.creatorUid,
+            creatorEmail: ride.creatorEmail,
+          } as RideCtx,
+          (membersRes.rows as any[]).map((m) => ({ uid: m.uid, email: m.email }))
+        );
+      }
+      return NextResponse.json({ success: true, cancelled: true });
     }
 
     let removedEmail = "";

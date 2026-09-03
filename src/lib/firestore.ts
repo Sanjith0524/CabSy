@@ -120,24 +120,31 @@ export async function removeMember(
   await leaveRide(rideId, uid);
 }
 
+export interface MembersSnapshot {
+  members: RideMember[];
+  count: number;
+  restricted: boolean; // true when the caller isn't in the ride (roster hidden)
+}
+
 export function subscribeToMembers(
   rideId: string,
-  callback: (members: RideMember[]) => void
+  callback: (snap: MembersSnapshot) => void
 ): () => void {
   let active = true;
   const fetchMembers = async () => {
     try {
       const res = await fetch(`/api/rides/${rideId}/members`);
       if (!res.ok) return;
-      const { members } = await res.json();
-      if (active && members) {
-        callback(
-          members.map((m: any) => ({
-            ...m,
-            joinedAt: mapTimestamp(m.joinedAt),
-          }))
-        );
-      }
+      const data = await res.json();
+      if (!active) return;
+      callback({
+        members: (data.members ?? []).map((m: any) => ({
+          ...m,
+          joinedAt: mapTimestamp(m.joinedAt),
+        })),
+        count: Number(data.count) || 0,
+        restricted: Boolean(data.restricted),
+      });
     } catch (err) {
       console.error("Fetch members error:", err);
     }
@@ -156,8 +163,9 @@ export async function isMember(rideId: string, uid: string): Promise<boolean> {
   try {
     const res = await fetch(`/api/rides/${rideId}/members`);
     if (!res.ok) return false;
-    const { members } = await res.json();
-    return members.some((m: any) => m.uid === uid);
+    const data = await res.json();
+    if (typeof data.joined === "boolean") return data.joined;
+    return (data.members ?? []).some((m: any) => m.uid === uid);
   } catch {
     return false;
   }

@@ -7,16 +7,28 @@ export const dynamic = "force-dynamic";
 /**
  * Backstop for the opportunistic sweep in GET /api/rides — runs on a Vercel
  * cron schedule (see vercel.json) so housekeeping still happens when no one is
- * using the app. Vercel sends `Authorization: Bearer $CRON_SECRET` automatically
- * when CRON_SECRET is set on the project.
+ * using the app.
+ *
+ * Auth: if CRON_SECRET is set, require `Authorization: Bearer $CRON_SECRET`
+ * (Vercel sends this automatically). If it isn't set, only accept Vercel's own
+ * cron trigger — never an arbitrary caller.
  */
 export async function GET(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
+  const authHeader = request.headers.get("authorization");
+  const isVercelCron = (request.headers.get("user-agent") || "").includes(
+    "vercel-cron"
+  );
+
   if (secret) {
-    const auth = request.headers.get("authorization");
-    if (auth !== `Bearer ${secret}`) {
+    if (authHeader !== `Bearer ${secret}`) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+  } else if (process.env.NODE_ENV === "production" && !isVercelCron) {
+    return NextResponse.json(
+      { error: "Unauthorized — set CRON_SECRET to call this endpoint." },
+      { status: 401 }
+    );
   }
 
   await initDb();
