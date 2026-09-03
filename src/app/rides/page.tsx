@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { subscribeToRides } from "@/lib/firestore";
+import { subscribeToRides } from "@/lib/api";
 import ProtectedLayout from "@/components/layout/ProtectedLayout";
 import RideCard from "@/components/rides/RideCard";
 import { Ride } from "@/types";

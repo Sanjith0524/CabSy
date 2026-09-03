@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { subscribeToRides } from "@/lib/firestore";
+import { subscribeToRides } from "@/lib/api";
 import ProtectedLayout from "@/components/layout/ProtectedLayout";
 import RideCard from "@/components/rides/RideCard";
 import { Ride } from "@/types";

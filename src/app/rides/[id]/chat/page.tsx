@@ -11,7 +11,7 @@ import {
   getUserMessageCount,
   MESSAGE_LIMIT,
   MESSAGE_WARN_AT,
-} from "@/lib/firestore";
+} from "@/lib/api";
 import ProtectedLayout from "@/components/layout/ProtectedLayout";
 import { Ride, Message } from "@/types";
 import { Send, ArrowLeft, AlertTriangle, Info, ShieldCheck } from "lucide-react";

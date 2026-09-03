@@ -11,7 +11,7 @@ import {
   cancelRide,
   removeMember,
   isMember,
-} from "@/lib/firestore";
+} from "@/lib/api";
 import ProtectedLayout from "@/components/layout/ProtectedLayout";
 import { Ride, RideMember } from "@/types";
 import {

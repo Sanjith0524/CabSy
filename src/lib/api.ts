@@ -1,3 +1,5 @@
+// Client-side wrapper around the app's own REST API (/api/*). The `subscribe*`
+// helpers poll on an interval and call back with fresh data.
 import type { Ride, RideMember, Message, AppNotification } from "@/types";
 
 const mapTimestamp = (val: any) => {

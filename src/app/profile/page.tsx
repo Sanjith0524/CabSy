@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { subscribeToRides } from "@/lib/firestore";
+import { subscribeToRides } from "@/lib/api";
 import ProtectedLayout from "@/components/layout/ProtectedLayout";
 import { Ride } from "@/types";
 import { LogOut, ShieldCheck, Mail, CheckCircle2, Sun, Moon, Bell } from "lucide-react";

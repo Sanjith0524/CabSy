@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { createRide } from "@/lib/firestore";
+import { createRide } from "@/lib/api";
 import ProtectedLayout from "@/components/layout/ProtectedLayout";
 import { MapPin, Flag, Calendar, Clock, Users, FileText, AlertCircle } from "lucide-react";
 import { format } from "date-fns";

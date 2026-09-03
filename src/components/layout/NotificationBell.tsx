@@ -13,7 +13,7 @@ import {
   Clock,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { subscribeToNotifications, markNotificationsRead } from "@/lib/firestore";
+import { subscribeToNotifications, markNotificationsRead } from "@/lib/api";
 import { AppNotification, NotificationType } from "@/types";
 
 const ICONS: Record<NotificationType, typeof Bell> = {
