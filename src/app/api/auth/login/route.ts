@@ -3,6 +3,7 @@ import { db, initDb } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { sendOTPEmail } from "@/lib/mailer";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
+import { generateOTP } from "@/lib/otp";
 
 const IS_PROD = process.env.NODE_ENV === "production";
 
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = generateOTP();
     const expiresAt = Date.now() + 5 * 60 * 1000;
     await db.execute({
       sql: "INSERT OR REPLACE INTO user_otps (email, otp, expiresAt, attempts, purpose) VALUES (?, ?, ?, 0, 'verify')",

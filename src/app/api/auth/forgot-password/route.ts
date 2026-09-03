@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, initDb } from "@/lib/db";
 import { sendOTPEmail } from "@/lib/mailer";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
+import { generateOTP } from "@/lib/otp";
 
 const IS_PROD = process.env.NODE_ENV === "production";
 
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
     // Only send a code to a real, verified account — but always return the same
     // response so this endpoint can't be used to probe which emails exist.
     if (user && Number(user.isEmailVerified) === 1) {
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const otp = generateOTP();
       const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
 
       await db.execute({

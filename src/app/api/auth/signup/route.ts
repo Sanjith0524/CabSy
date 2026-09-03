@@ -6,6 +6,7 @@ import fs from "fs";
 import path from "path";
 import { sendOTPEmail } from "@/lib/mailer";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
+import { generateOTP } from "@/lib/otp";
 
 const ALLOWED_DOMAINS = ["vitstudent.ac.in", "vit.ac.in"];
 const IS_PROD = process.env.NODE_ENV === "production";
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = generateOTP();
     const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
 
     await db.execute({
