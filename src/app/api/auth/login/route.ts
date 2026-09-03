@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, initDb } from "@/lib/db";
 import bcrypt from "bcryptjs";
-import { cookies } from "next/headers";
-import { signSession, SESSION_COOKIE, sessionCookieOptions } from "@/lib/auth";
 import { sendOTPEmail } from "@/lib/mailer";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
 
@@ -44,40 +42,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 400 });
     }
 
-    // Enforce email verification. If they never verified, re-issue an OTP and
-    // send them to the verification step instead of logging them in.
-    if (!user.isEmailVerified) {
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      const expiresAt = Date.now() + 5 * 60 * 1000;
-      await db.execute({
-        sql: "INSERT OR REPLACE INTO user_otps (email, otp, expiresAt, attempts, purpose) VALUES (?, ?, ?, 0, 'verify')",
-        args: [email, otp, expiresAt],
-      });
-      if (!IS_PROD) console.log(`[2FA OTP - LOGIN] ${email}: ${otp}`);
-      try {
-        await sendOTPEmail(email, otp, "login");
-      } catch (mailErr) {
-        console.error("Failed to send OTP email:", mailErr);
-      }
-      return NextResponse.json({ requiresOTP: true, email });
+    // Two-factor on every login: valid credentials only get you an emailed
+    // one-time code — the session is issued by /api/auth/otp/verify.
+    const otpLimit = rateLimit(`login-otp:${email}`, 5, 15 * 60 * 1000);
+    if (!otpLimit.ok) {
+      return NextResponse.json(
+        { error: "Too many codes requested for this account. Try again in a few minutes." },
+        { status: 429, headers: { "Retry-After": String(otpLimit.retryAfter) } }
+      );
     }
 
-    const token = signSession({
-      uid: user.uid,
-      email: user.email,
-      displayName: user.displayName,
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 5 * 60 * 1000;
+    await db.execute({
+      sql: "INSERT OR REPLACE INTO user_otps (email, otp, expiresAt, attempts, purpose) VALUES (?, ?, ?, 0, 'verify')",
+      args: [email, otp, expiresAt],
     });
-    cookies().set(SESSION_COOKIE, token, sessionCookieOptions);
+    if (!IS_PROD) console.log(`[2FA OTP - LOGIN] ${email}: ${otp}`);
+    try {
+      await sendOTPEmail(email, otp, "login");
+    } catch (mailErr) {
+      console.error("Failed to send OTP email:", mailErr);
+    }
 
-    return NextResponse.json({
-      user: {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
-        college: user.college,
-      },
-    });
+    return NextResponse.json({ requiresOTP: true, email });
   } catch (err) {
     console.error("Login error:", err);
     return NextResponse.json(

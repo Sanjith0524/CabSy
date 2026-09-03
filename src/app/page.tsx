@@ -36,6 +36,13 @@ export default function HomePage() {
   const [otpCode, setOtpCode] = useState("");
   const [resetCode, setResetCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [resendIn, setResendIn] = useState(0);
+
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const t = setTimeout(() => setResendIn((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendIn]);
 
   // Demo deployment: skip the auth screen and drop visitors straight into a
   // guest session. "starting" shows a loader; "failed"/"signin" fall back to
@@ -108,6 +115,21 @@ export default function HomePage() {
       }
     }
     setSubmitting(false);
+  };
+
+  const handleResend = async () => {
+    if (resendIn > 0 || submitting) return;
+    setFormError(null);
+    setSubmitting(true);
+    const res =
+      activeTab === "register"
+        ? await signup(name.trim(), email.trim(), password)
+        : await login(email.trim(), password);
+    setSubmitting(false);
+    if (res && res.requiresOTP) {
+      setOtpCode("");
+      setResendIn(30);
+    }
   };
 
   const handleVerifyOTP = async (e: React.FormEvent) => {
@@ -249,16 +271,27 @@ export default function HomePage() {
                 {submitting ? "Verifying…" : "Verify code"}
               </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setOtpCode("");
-                  goTo("auth");
-                }}
-                className="text-center text-sm font-medium text-on-surface-variant hover:text-primary transition-colors"
-              >
-                Back to sign in
-              </button>
+              <div className="flex flex-col items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={submitting || resendIn > 0}
+                  className="text-sm font-medium text-on-surface-variant hover:text-primary transition-colors disabled:opacity-50 disabled:hover:text-on-surface-variant"
+                >
+                  {resendIn > 0 ? `Resend code in ${resendIn}s` : "Resend code"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOtpCode("");
+                    setResendIn(0);
+                    goTo("auth");
+                  }}
+                  className="text-sm font-medium text-on-surface-variant hover:text-primary transition-colors"
+                >
+                  Back to sign in
+                </button>
+              </div>
             </form>
           </>
         ) : mode === "forgot" ? (
