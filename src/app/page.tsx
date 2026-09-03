@@ -37,9 +37,38 @@ export default function HomePage() {
   const [resetCode, setResetCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
 
+  // Demo deployment: skip the auth screen and drop visitors straight into a
+  // guest session. "starting" shows a loader; "failed"/"signin" fall back to
+  // the normal auth card (with the demo button still available as a retry).
+  const [demoState, setDemoState] = useState<
+    "idle" | "starting" | "failed" | "signin"
+  >(DEMO_MODE ? "starting" : "idle");
+
   useEffect(() => {
     if (!loading && user) router.replace("/dashboard");
   }, [user, loading, router]);
+
+  useEffect(() => {
+    if (!DEMO_MODE) return;
+    const wantSignin =
+      typeof window !== "undefined" &&
+      new URLSearchParams(window.location.search).has("signin");
+    if (wantSignin) setDemoState("signin");
+  }, []);
+
+  useEffect(() => {
+    if (!DEMO_MODE || demoState !== "starting" || loading || user) return;
+    let cancelled = false;
+    (async () => {
+      const ok = await demoLogin();
+      if (cancelled) return;
+      if (ok) router.replace("/dashboard");
+      else setDemoState("failed");
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [demoState, loading, user, demoLogin, router]);
 
   const goTo = (m: Mode) => {
     setMode(m);
@@ -123,7 +152,7 @@ export default function HomePage() {
     setSubmitting(true);
     const ok = await demoLogin();
     if (ok) router.replace("/dashboard");
-    setSubmitting(false);
+    else setSubmitting(false);
   };
 
   const handleReset = async (e: React.FormEvent) => {
@@ -147,10 +176,13 @@ export default function HomePage() {
     setSubmitting(false);
   };
 
-  if (loading) {
+  if (loading || (DEMO_MODE && demoState === "starting")) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        {DEMO_MODE && demoState === "starting" && (
+          <p className="text-sm text-on-surface-variant">Setting up your demo…</p>
+        )}
       </div>
     );
   }
@@ -337,7 +369,9 @@ export default function HomePage() {
                   {submitting ? "Starting…" : "Explore the demo"}
                 </button>
                 <p className="text-[12px] text-on-surface-variant text-center mt-2 leading-relaxed">
-                  Jump straight in as a guest — no sign-up. Sample data, resets daily.
+                  {demoState === "failed"
+                    ? "Couldn't start automatically — tap to retry, or sign in below."
+                    : "Jump straight in as a guest — no sign-up. Sample data, resets daily."}
                 </p>
                 <div className="flex items-center gap-3 my-5">
                   <span className="h-px flex-1 bg-surface-variant" />

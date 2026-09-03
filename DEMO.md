@@ -8,9 +8,13 @@ visitor does can touch the real student instance.
 
 When `NEXT_PUBLIC_DEMO_MODE=true`:
 
-- The sign-in screen shows an **"Explore the demo"** button — one click creates a
-  throwaway guest account (no college-email check, no OTP) and drops you on the
-  dashboard.
+- Visiting the site **skips the login page entirely** — it auto-creates a
+  throwaway guest account (no college-email check, no OTP) and lands you on the
+  dashboard. A "Setting up your demo…" loader shows while that happens.
+- If auto-entry fails, it falls back to the auth screen with an **"Explore the
+  demo"** retry button.
+- `https://cabsy-demo.vercel.app/?signin=1` bypasses auto-entry and shows the
+  real sign-in form (for testing the actual auth flow).
 - A **"Demo mode"** badge sits at the bottom of every page.
 - The feed is pre-seeded with ~7 sample rides from fake students, some with chat
   and joined members.
