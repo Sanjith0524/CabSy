@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import { db } from "@/lib/db";
+import { isDemoMode, ensureDemoSeed, purgeStaleGuests } from "@/lib/demo";
 
 const HOURS_2 = 2 * 60 * 60 * 1000;
 const REMINDER_WINDOW = 45 * 60 * 1000; // notify when departure is <= 45 min away
@@ -80,6 +81,13 @@ export async function runSweep({ force = false }: { force?: boolean } = {}): Pro
             )`,
       args: [now - MSG_TTL_AFTER_DEPART],
     });
+
+    // 4. Demo deployment: retire stale guest visitors and keep the sample
+    //    feed topped up with fresh, upcoming rides.
+    if (isDemoMode()) {
+      await purgeStaleGuests();
+      await ensureDemoSeed();
+    }
   } catch (err) {
     console.error("Sweep failed:", err);
   }

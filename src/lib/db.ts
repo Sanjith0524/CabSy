@@ -164,6 +164,9 @@ async function initDb() {
     try {
       await db.execute("ALTER TABLE rides ADD COLUMN reminderSent INTEGER DEFAULT 0");
     } catch (_) {}
+    try {
+      await db.execute("ALTER TABLE users ADD COLUMN isGuest INTEGER DEFAULT 0");
+    } catch (_) {}
 
     isInitialized = true;
   } catch (err) {

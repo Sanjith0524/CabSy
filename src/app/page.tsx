@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { ShieldCheck, AlertCircle, User, Mail, Lock } from "lucide-react";
+import { ShieldCheck, AlertCircle, User, Mail, Lock, Sparkles } from "lucide-react";
 
 const ALLOWED_DOMAINS = ["vitstudent.ac.in", "vit.ac.in"];
+const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
 type Mode = "auth" | "otp" | "forgot" | "reset";
 
@@ -18,6 +19,7 @@ export default function HomePage() {
     verifyOTP,
     forgotPassword,
     resetPassword,
+    demoLogin,
     authError,
   } = useAuth();
   const router = useRouter();
@@ -113,6 +115,14 @@ export default function HomePage() {
       setNewPassword("");
       setMode("reset");
     }
+    setSubmitting(false);
+  };
+
+  const handleDemo = async () => {
+    setFormError(null);
+    setSubmitting(true);
+    const ok = await demoLogin();
+    if (ok) router.replace("/dashboard");
     setSubmitting(false);
   };
 
@@ -315,6 +325,30 @@ export default function HomePage() {
           </>
         ) : (
           <>
+            {DEMO_MODE && (
+              <div className="mb-6">
+                <button
+                  type="button"
+                  onClick={handleDemo}
+                  disabled={submitting}
+                  className="btn-primary w-full py-3.5"
+                >
+                  <Sparkles size={15} />
+                  {submitting ? "Starting…" : "Explore the demo"}
+                </button>
+                <p className="text-[12px] text-on-surface-variant text-center mt-2 leading-relaxed">
+                  Jump straight in as a guest — no sign-up. Sample data, resets daily.
+                </p>
+                <div className="flex items-center gap-3 my-5">
+                  <span className="h-px flex-1 bg-surface-variant" />
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-outline">
+                    or sign in
+                  </span>
+                  <span className="h-px flex-1 bg-surface-variant" />
+                </div>
+              </div>
+            )}
+
             {/* Tabs */}
             <div className="flex bg-surface-container-low p-1 rounded-full mb-6">
               <button

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Figtree, Bricolage_Grotesque, DM_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
+import DemoBadge from "@/components/DemoBadge";
 
 const figtree = Figtree({
   subsets: ["latin"],
@@ -79,6 +80,7 @@ export default function RootLayout({
         className={`${figtree.variable} ${bricolage.variable} ${dmMono.variable} font-sans bg-background text-on-background antialiased min-h-screen flex flex-col`}
       >
         <AuthProvider>
+          <DemoBadge />
           <div className="flex-1 flex flex-col">
             <div className="flex-1">{children}</div>
             <footer className="w-full py-6 border-t border-surface-variant/50 text-center font-mono text-[11px] text-on-surface-variant/70 tracking-[0.14em] uppercase z-40">

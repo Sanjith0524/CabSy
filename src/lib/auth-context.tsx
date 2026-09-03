@@ -27,6 +27,7 @@ interface AuthContextType {
   forgotPassword: (email: string) => Promise<boolean>;
   resetPassword: (email: string, code: string, password: string) => Promise<boolean>;
   updatePreferences: (prefs: { notifyEmail?: boolean; notifyChat?: boolean }) => Promise<boolean>;
+  demoLogin: () => Promise<boolean>;
   signOut: () => Promise<void>;
   authError: string | null;
 }
@@ -40,6 +41,7 @@ const AuthContext = createContext<AuthContextType>({
   forgotPassword: async () => false,
   resetPassword: async () => false,
   updatePreferences: async () => false,
+  demoLogin: async () => false,
   signOut: async () => {},
   authError: null,
 });
@@ -211,6 +213,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const demoLogin = async (): Promise<boolean> => {
+    setAuthError(null);
+    try {
+      const res = await fetch("/api/auth/demo", { method: "POST" });
+      const data = await res.json();
+      if (res.ok && data.user) {
+        setUser(data.user);
+        return true;
+      }
+      setAuthError(data.error || "Could not start a demo session");
+      return false;
+    } catch {
+      setAuthError("Could not start a demo session. Please try again.");
+      return false;
+    }
+  };
+
   const signOut = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
@@ -223,7 +242,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, verifyOTP, signup, forgotPassword, resetPassword, updatePreferences, signOut, authError }}
+      value={{ user, loading, login, verifyOTP, signup, forgotPassword, resetPassword, updatePreferences, demoLogin, signOut, authError }}
     >
       {children}
     </AuthContext.Provider>
