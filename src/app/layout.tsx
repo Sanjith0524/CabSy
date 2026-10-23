@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Figtree, Bricolage_Grotesque, DM_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import DemoBadge from "@/components/DemoBadge";
+import InstallPrompt from "@/components/InstallPrompt";
 
 const figtree = Figtree({
   subsets: ["latin"],
@@ -38,9 +39,9 @@ export const metadata: Metadata = {
     ],
     apple: [
       {
-        url: "/logo1.jpeg",
+        url: "/icons/apple-touch-icon.png",
         sizes: "180x180",
-        type: "image/jpeg",
+        type: "image/png",
       },
     ],
   },
@@ -49,6 +50,10 @@ export const metadata: Metadata = {
     title: "CabSy",
     statusBarStyle: "default",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#F2CA50",
 };
 
 export default function RootLayout({
@@ -81,6 +86,7 @@ export default function RootLayout({
       >
         <AuthProvider>
           <DemoBadge />
+          <InstallPrompt />
           <div className="flex-1 flex flex-col">
             <div className="flex-1">{children}</div>
             <footer className="w-full py-6 border-t border-surface-variant/50 text-center font-mono text-[11px] text-on-surface-variant/70 tracking-[0.14em] uppercase z-40">
